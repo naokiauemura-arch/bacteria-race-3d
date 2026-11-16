@@ -343,6 +343,8 @@ const abxT=(k,f)=>lang==='ja'?ABX[k][f]:EN_ABX[k][f];
 const coT=(c,f)=>lang==='ja'?c[f]:EN_CO[c.id][f],moT=(i,f)=>lang==='ja'?MODES[i][f]:EN_MO[i][f];
 const WRAP_IN=1.25,WRAP_OUT=.85;
 const sprbV=v=>v>.2?2+v*.12:0;
+const PRED_REAL=90.9,FAST_REAL=57.4;   // Bdellovibrio BIS2 vs the fastest racer, both measured
+const predSpeed=()=>PRED_REAL/FAST_REAL*(battle?32+.2*FAST_REAL:FAST_REAL);
 const MAXM=1.6;   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
@@ -813,7 +815,7 @@ function rollItem(r){
   const o=order().filter(x=>x.finish==null),f=o.length>1?o.indexOf(r)/(o.length-1):0;
   const bo=r.sp.noGlu?'pyr':'glu';
   const w=[[bo,4-2*f],['bio',2.5-1.5*f],['phg',.4+5*f]];for(let k=0;k<5;k++)w.push([k,.65+.65*f]);
-  if(r.dist>LEN*.45&&o.indexOf(r)>=2)w.push(['bde',1.6]);
+  if(r.dist>LEN*.28&&o.indexOf(r)>=2)w.push(['bde',1.6]);
   let t=Math.random()*w.reduce((a,x)=>a+x[1],0);for(const[k,x]of w){if((t-=x)<=0)return k;}return bo;
 }
 function giveItem(r){
@@ -1009,8 +1011,8 @@ function stepRace(dt){
   // phages in flight
   for(const f of phages){
     f.t+=dt;const tg=f.tg;
-    f.d+=(Math.max(tg.v,10)+(f.jumbo?240:70))*dt*TS;f.x=lerp(f.x,rx(tg),f.jumbo?.2:.14);
-    if(tg.finish!=null||f.t>(f.jumbo?25:12))f.dead=true;
+    f.d+=(f.jumbo?predSpeed():Math.max(tg.v,10)+70)*dt*TS;f.x=lerp(f.x,rx(tg),f.jumbo?.2:.14);
+    if(tg.finish!=null||f.t>(f.jumbo?45:12))f.dead=true;
     else if(f.d>=tg.dist-.6){f.dead=true;strike(tg,f.src,f.jumbo?'bde':'phg');}
     if(f.dead)scene.remove(f.g);
   }
