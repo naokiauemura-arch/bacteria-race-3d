@@ -36,7 +36,7 @@ h2 span{letter-spacing:0}
 .sp .n{font-style:italic;font-weight:700;color:var(--c);font-size:14.5px;display:flex;justify-content:space-between;align-items:baseline}
 .sp .n em{font-style:normal;font-weight:500;font-size:10px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 4px}
 .sp .j{font-size:10.5px;color:var(--dim);margin:1px 0 6px}
-.bar{display:grid;grid-template-columns:18px 1fr 30px;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);height:12px}
+.bar{display:grid;grid-template-columns:auto 1fr 30px;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);height:12px}
 .bar i{display:block;height:4px;border-radius:2px;background:var(--c);min-width:2px}
 .bar b{font-weight:500;text-align:right;color:var(--ink)}
 .bar span{font-family:var(--serif);color:var(--gold)}
@@ -55,6 +55,12 @@ h2 span{letter-spacing:0}
 .co{padding:8px 6px;border:1px solid var(--line);border-radius:10px;font-size:12.5px;line-height:1.35;background:rgba(255,255,255,.025)}
 .co small{display:block;color:var(--dim);font-size:10.5px}
 .co[aria-pressed=true]{border-color:var(--gold);background:rgba(217,181,74,.13)}
+#lang{position:absolute;top:22px;right:60px;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-size:11.5px}
+#lang button{padding:4px 12px;color:var(--dim)}
+#lang button[aria-pressed=true]{background:var(--gold);color:#17120a;font-weight:700}
+.src a{color:inherit}
+@media (max-width:1000px){#lang{right:30px}}
+@media (max-width:480px){#lang{right:14px;top:16px}}
 #go{align-self:flex-start;padding:12px 34px;border-radius:999px;background:var(--gold);color:#17120a;font-weight:700;font-size:16px;letter-spacing:.08em}
 #go:hover{filter:brightness(1.1)}
 .keys{font-size:11.5px;color:var(--dim);line-height:1.8}
@@ -142,33 +148,34 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
 <div id="menu">
   <div>
     <div class="eyebrow">8 SPECIES · 5 COURSES · ITEM BATTLE</div>
-    <h1>バクテリア・レース 3D</h1>
+    <div id="lang"><button data-l="ja">日本語</button><button data-l="en">English</button></div>
+    <h1 id="t_title"></h1>
   </div>
-  <p class="lead">8種の細菌が1本のコースで混走するアイテムバトルです。5つのコースには粘性なし・粘性あり・狭小の区画が入り組んでいて、どの道を選ぶかは菌しだい。グルコースで加速し、ファージと抗生物質でライバルを止めましょう。</p>
+  <p class="lead" id="t_lead"></p>
   <div>
-    <h2>細菌を選ぶ　<span>バー = 粘性なし（開）・粘性あり（粘）・狭小（狭）での実測速度 µm/s</span></h2>
+    <h2 id="t_hsp"></h2>
     <div id="species"></div>
     <p class="legend" id="legend"></p>
   </div>
-  <div><h2>コース</h2><div id="courses" class="row"></div></div>
-  <div><h2>速度</h2><div id="modes" class="row"></div></div>
-  <button id="go">スタート</button>
-  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。</p>
-  <p class="src">速度: アップロードされた動画（Movie S3）の各種・各環境の平均値（粘性空間の <i>B. subtilis</i> は表示値 57.4 を使用）。コースの形、近道の倍率、ラッピングモードによる加速、バトル補正、追い上げ補正はゲーム上の設定で、動画の速度値には含まれません。抗生物質の相性は、グラム染色性・外膜の有無・属レベルで知られる自然耐性の傾向をゲーム用に3段階へ単純化したもので、動画のデータではありません。株によって異なり、医療上の判断には使えません。</p>
+  <div><h2 id="t_hco"></h2><div id="courses" class="row"></div></div>
+  <div><h2 id="t_hmo"></h2><div id="modes" class="row"></div></div>
+  <button id="go"></button>
+  <p class="keys" id="t_keys"></p>
+  <p class="src" id="t_src"></p>
 </div>
 <div id="blurb"><div class="n" id="bn"></div><p id="bd"></p></div>
 
 <div id="hud" class="hidden">
-  <div id="rank"><div class="big num"><span id="rk">1</span><small> / 8 位</small></div><div class="who" id="who"></div></div>
+  <div id="rank"><div class="big num"><span id="rk">1</span><small id="t_of"></small></div><div class="who" id="who"></div></div>
   <div id="env"><div class="k" id="ek"></div><div class="nm" id="en"></div><div class="my num" id="em"></div></div>
-  <div id="stat"><div class="t num"><span id="tm">0.00</span><small> s</small></div><div class="v num"><span id="sv">0.0</span> <small>µm/s</small></div><div class="slow">0.4倍速スローモーション</div></div>
+  <div id="stat"><div class="t num"><span id="tm">0.00</span><small> s</small></div><div class="v num"><span id="sv">0.0</span> <small>µm/s</small></div><div class="slow" id="t_slow"></div></div>
   <div id="center"></div>
   <div id="msg"></div>
   <div id="wrap" class="hidden"><b id="wk"></b><span id="wh"></span></div>
-  <div id="item" class="empty"><div class="lab"><span>アイテム</span><span id="ih">Space で使用</span></div><div class="nm" id="in">なし</div><div class="sb" id="is"></div><div class="cmp" id="ic"></div></div>
+  <div id="item" class="empty"><div class="lab"><span id="t_il"></span><span id="ih"></span></div><div class="nm" id="in"></div><div class="sb" id="is"></div><div class="cmp" id="ic"></div></div>
   <div id="prog"><div class="secs" id="psecs"></div><div class="lbls" id="plbls"></div><div id="pdots"></div></div>
-  <div id="touch"><button data-k="left" aria-label="左">◀</button><span style="display:flex;gap:8px"><button class="b" id="tw" data-k="wrap">巻く</button><button class="b" data-k="use">使う</button></span><button data-k="right" aria-label="右">▶</button></div>
-  <button id="quit">やめる</button>
+  <div id="touch"><button data-k="left" aria-label="左">◀</button><span style="display:flex;gap:8px"><button class="b" id="tw" data-k="wrap"></button><button class="b" id="tu" data-k="use"></button></span><button data-k="right" aria-label="右">▶</button></div>
+  <button id="quit"></button>
 </div>
 
 <div id="result" class="hidden"><div class="card">
@@ -176,7 +183,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <h3 id="rh"></h3>
   <p class="sum" id="rs"></p>
   <table id="rt"></table>
-  <div class="btns"><button class="p" id="again">もう一度</button><button id="back">細菌・コースを変える</button></div>
+  <div class="btns"><button class="p" id="again"></button><button id="back"></button></div>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -185,7 +192,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
 'use strict';
 const $=id=>document.getElementById(id);
 if(typeof THREE==='undefined'){
-  document.body.insertAdjacentHTML('beforeend','<div id="err">3Dライブラリ（three.js）を読み込めませんでした。<br>ネットワーク接続を確認して再読み込みしてください。</div>');
+  document.body.insertAdjacentHTML('beforeend','<div id="err">3Dライブラリ（three.js）を読み込めませんでした。ネットワーク接続を確認して再読み込みしてください。<br>Could not load the 3D library (three.js). Check your connection and reload.</div>');
   $('menu').classList.add('hidden');return;
 }
 
@@ -195,20 +202,20 @@ if(typeof THREE==='undefined'){
 const SPECIES=[
  {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapIn:1.12,
   desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。マクロライドとアミノグリコシドが弱点。'},
- {id:'ci',ab:'Ci',name:'C. insecticola',jp:'カバレロニア・インセクティコラ',gram:'−',color:0x3fae5a,v:[22.4,18.3,2.6],s:[0,0,0,2,0],shape:'polar',len:2.4,rad:.4,wrap:true,
-  desc:'極べん毛で泳ぐ桿菌。べん毛を菌体に巻きつけるラッピングモードで狭小ルートを押し通れる。弱点はアミノグリコシドだけ。'},
- {id:'ba',ab:'Ba',name:'B. anthina',jp:'バークホルデリア・アンティナ',gram:'−',color:0x9aa3aa,v:[12.5,8.9,1.0],s:[0,0,0,0,0],shape:'polar',len:2.6,rad:.42,
+ {id:'ci',ab:'Ci',name:'C. insecticola',jp:'カバレロニア・インセクティコラ',gram:'−',color:0x3fae5a,v:[22.4,18.3,2.6],s:[0,0,0,2,0],shape:'tuft',nf:3,len:2.4,rad:.4,wrap:true,
+  desc:'極べん毛の束で泳ぐ桿菌。べん毛を菌体に巻きつけるラッピングモードで狭小ルートを押し通れる。弱点はアミノグリコシドだけ。'},
+ {id:'ba',ab:'Ba',name:'B. anthina',jp:'バークホルデリア・アンティナ',gram:'−',color:0x9aa3aa,v:[12.5,8.9,1.0],s:[0,0,0,0,0],shape:'tuft',nf:3,len:2.6,rad:.42,
   desc:'どの環境でも遅め。しかしセパシア群らしい多剤耐性で抗生物質5系統がすべて効かない。粘性なしの道を選んで堅実に。'},
- {id:'se',ab:'Se',name:'S. enterica',jp:'サルモネラ・エンテリカ',gram:'−',color:0xc42a45,v:[29.7,35.3,6.7],s:[2,0,2,2,0],shape:'bundle',len:2.8,rad:.42,nf:5,
-  desc:'周毛性べん毛の束で泳ぐ安定型。粘性の近道は得、狭小ルートは損。βラクタム・ポリミキシン・アミノグリコシドがよく効く。'},
- {id:'vf',ab:'Vf',name:'V. fischeri',jp:'ビブリオ・フィシェリ',gram:'−',color:0x3cc4b3,v:[36.0,51.0,15.9],s:[1,0,1,2,1],shape:'tuft',len:3.2,rad:.4,wrap:true,
+ {id:'se',ab:'Se',name:'S. enterica',jp:'サルモネラ・エンテリカ',gram:'−',color:0xc42a45,v:[29.7,35.3,6.7],s:[2,0,2,2,0],shape:'bundle',len:2.8,rad:.42,nf:6,
+  desc:'菌体の側面から生える周べん毛を束ねて泳ぐ安定型。粘性の近道は得、狭小ルートは損。βラクタム・ポリミキシン・アミノグリコシドがよく効く。'},
+ {id:'vf',ab:'Vf',name:'V. fischeri',jp:'ビブリオ・フィシェリ',gram:'−',color:0x3cc4b3,v:[36.0,51.0,15.9],s:[1,0,1,2,1],shape:'tuft',nf:3,len:3.2,rad:.4,wrap:true,
   desc:'極に房状のべん毛を持つ万能型。粘性に強く、ラッピングモードで狭小ルートでも加速できる。'},
  {id:'va',ab:'Va',name:'V. alginolyticus',jp:'ビブリオ・アルギノリティカス',gram:'−',color:0xc9cfd3,v:[44.5,16.2,3.8],s:[0,0,1,2,1],shape:'polar',len:1.8,rad:.5,
   desc:'粘性なしの道では王者。粘性の近道や狭小ルートに入ると失速するので、遠回りでも広い道を。'},
  {id:'fj',ab:'Fj',name:'F. johnsoniae',jp:'フラボバクテリウム・ジョンソニエ',gram:'−',color:0xe0b520,v:[1.7,1.7,1.4],s:[0,0,1,0,2],shape:'glide',len:6,rad:.24,
   desc:'べん毛なしで滑走する細長い菌。環境でほぼ速さが変わらないので、近道は常に得。マクロライドが弱点。'},
- {id:'bs',ab:'Bs',name:'B. subtilis',jp:'枯草菌（バチルス・サブチリス）',gram:'＋',color:0xe5584d,v:[27.6,57.4,33.1],s:[2,2,0,2,2],shape:'bundle',len:4.2,rad:.42,nf:7,
-  desc:'粘性の中で全体最速。粘性ゾーンと近道が稼ぎどころ。唯一のグラム陽性菌で、バンコマイシンを含むほとんどの薬が直撃する。'}
+ {id:'bs',ab:'Bs',name:'B. subtilis',jp:'枯草菌（バチルス・サブチリス）',gram:'＋',color:0xe5584d,v:[27.6,57.4,33.1],s:[2,2,0,2,2],shape:'bundle',len:4.2,rad:.42,nf:24,
+  desc:'菌体の側面から生える20〜30本の周べん毛を持ち、粘性の中で全体最速。粘性ゾーンと近道が稼ぎどころ。唯一のグラム陽性菌で、バンコマイシンを含むほとんどの薬が直撃する。'}
 ];
 const ABX=[
  {k:'β',cls:'βラクタム系',drug:'アンピシリン',mech:'細胞壁（ペプチドグリカン）合成を阻害',col:0xff8a5c},
@@ -249,6 +256,91 @@ const MODES=[
  {name:'バトル補正',sub:'速度 = 32 + 0.2 × 実測、後方ほど少し追い上げ。順位関係は保ったまま混戦に'},
  {name:'実測そのまま',sub:'速度差がそのまま出る。遅い菌は修行'}
 ];
+/* ================= language ================= */
+let lang='ja';
+try{const s=localStorage.getItem('br3d-lang');if(s==='en'||s==='ja')lang=s;else if(typeof navigator!=='undefined'&&!/^ja/i.test(navigator.language||'ja'))lang='en';}catch(e){}
+const EN_SP={
+ cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes. Weak to macrolides and aminoglycosides.'],
+ ci:['Caballeronia insecticola','Rod with a polar bundle of flagella. Wrapping them around the body lets it force its way through narrow routes. Its only weakness is aminoglycosides.'],
+ ba:['Burkholderia anthina','Slow everywhere, but as a cepacia-complex member it shrugs off all five antibiotic classes in this game. Take the non-viscous roads and play it steady.'],
+ se:['Salmonella enterica','Steady all-rounder driven by peritrichous flagella that emerge along the cell sides and bundle behind it. Viscous shortcuts pay off, narrow routes do not. β-lactams, polymyxins and aminoglycosides work well against it.'],
+ vf:['Vibrio fischeri','Versatile swimmer with a polar tuft of flagella. Strong in viscous sections, and wrapping mode speeds it up in narrow routes too.'],
+ va:['Vibrio alginolyticus','King of the non-viscous road. It stalls in viscous shortcuts and narrow routes, so take the wide road even when it is longer.'],
+ fj:['Flavobacterium johnsoniae','Long, thin cell that glides without flagella. Its speed barely changes with the environment, so shortcuts always pay off. Weak to macrolides.'],
+ bs:['Bacillus subtilis','Carries 20–30 peritrichous flagella along its sides and is the fastest of all in viscous sections, so viscous zones and shortcuts are where it scores. The only Gram-positive here: almost every drug, vancomycin included, hits it directly.']
+};
+const EN_ABX=[
+ {cls:'β-lactam',drug:'ampicillin',mech:'Blocks cell-wall (peptidoglycan) synthesis'},
+ {cls:'Glycopeptide',drug:'vancomycin',mech:'Blocks cell-wall synthesis; too large to cross an outer membrane'},
+ {cls:'Polymyxin',drug:'colistin',mech:'Binds outer-membrane LPS and disrupts the membrane'},
+ {cls:'Aminoglycoside',drug:'gentamicin',mech:'Binds the 30S ribosome and corrupts protein synthesis'},
+ {cls:'Macrolide',drug:'erythromycin',mech:'Binds the 50S ribosome and stalls protein synthesis'}
+];
+const EN_CO={
+ chip:{name:'Microfluidic Circuit',sub:'A glass chip. Learn the forks here'},
+ gut:{name:'Gut Crypt Valley',sub:'Mucus everywhere: home turf for viscosity lovers'},
+ soil:{name:'Soil Pore Labyrinth',sub:'Gaps between sand grains. Narrow routes back to back'},
+ squid:{name:'Light Organ Night Run',sub:'The sea at night. Long stretches with no rails'},
+ vent:{name:'Hydrothermal Vent Rush',sub:'Over lava. Holes and drop-offs: expert course'}
+};
+const EN_MO=[
+ {name:'Battle balance',sub:'speed = 32 + 0.2 × measured, plus a small catch-up boost. Rankings kept, pack stays close'},
+ {name:'Measured speeds',sub:'Raw speed differences. Slow species are hard mode'}
+];
+const ord=n=>n+(['th','st','nd','rd'][n%10>3||Math.floor(n/10)===1?0:n%10]||'th');
+const TX={
+ja:{
+ title:'バクテリア・レース 3D',
+ lead:'8種の細菌が1本のコースで混走するアイテムバトルです。5つのコースには粘性なし・粘性あり・狭小の区画が入り組んでいて、どの道を選ぶかは菌しだい。グルコースで加速し、ファージと抗生物質でライバルを止めましょう。',
+ hSp:'細菌を選ぶ　<span>バー = 粘性なし（開）・粘性あり（粘）・狭小（狭）での実測速度 µm/s</span>',hCo:'コース',hMo:'速度',go:'スタート',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。',
+ src:'速度: 論文 <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a>（bioRxiv）の動画 Movie S3 に表示された各種・各環境の平均値（粘性ありの <i>B. subtilis</i> は表示値 57.4 を使用）。コースの形、近道の倍率、ラッピングモードによる加速、バトル補正、追い上げ補正はゲーム上の設定で、論文の速度値には含まれません。抗生物質の相性は、グラム染色性・外膜の有無・属レベルで知られる自然耐性の傾向をゲーム用に3段階へ単純化したもので、論文のデータではありません。株によって異なり、医療上の判断には使えません。',
+ barL:['開','粘','狭'],gram:g=>'グラム'+g,wrapOK:'ラッピング可',
+ legend:'抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b><br>',paren:(a,b)=>a+'（'+b+'）',sep:'　',
+ gramP:g=>'（グラム'+(g==='＋'?'陽性':'陰性')+'）― ',
+ of8:' / 8 位',slow:'0.4倍速スローモーション',itemLab:'アイテム',useHint:'Space で使用',tw:'巻く',tu:'使う',quit:'やめる',again:'もう一度',back:'細菌・コースを変える',
+ env:['粘性なし','粘性あり','狭小'],eff:['耐性','やや効く','よく効く'],
+ scSign:g=>'近道 粘性あり ×'+g,noRail:'柵なし 場外注意',lg:['■ 粘性','■ 狭小','■ 近道','■ 穴・柵なし'],scEnv:'近道（粘性あり）',
+ envInfo:(v,rk)=>`実測 <b>${v} µm/s</b>・8種中 <b>${rk} 位</b>`,inGame:v=>'　ゲーム内 '+v,pathX:g=>'　道のり ×'+g,
+ glu:['グルコース','すぐ使えるエネルギー源。2秒ほど急加速'],bio:['バイオフィルム','菌体外マトリクスで次の攻撃を1回防ぐ'],phg:['ファージ','すぐ前の1菌を追尾して感染・溶菌。薬剤耐性は関係なし'],
+ none:'なし',noneSub:'回転する箱を取ると手に入る',got:n=>n+' を入手',
+ bioFx:'バイオフィルムで防御',bioSay:'バイオフィルムが攻撃を防いだ',phFx:'ファージ感染！',phMe:n=>n+' のファージに感染！',phHit:n=>n+' にファージ命中',
+ resFx:k=>k+' 耐性',resMe:(n,c)=>n+' の'+c+' → 耐性で無効！',abxMe:(n,c,e)=>n+' の'+c+'：'+e+'…',gluFx:'グルコース！',
+ phNone:'前に誰もいない。ファージは宿主を見つけられず拡散した',abxNone:c=>c+'：射程内に誰もいない',abxZero:(c,n)=>c+'：射程内の '+n+' 菌には効かなかった',abxHit:(c,n)=>c+'：'+n+' 菌に命中',
+ fell:'場外！少し手前からやり直し',scIn:g=>'近道へ：粘性ありだが道のり ×'+g,wrapOn:'ラッピング ON',wrapOff:'ラッピング OFF',goal:n=>n+' がゴール！',
+ rc:(c,l,m)=>c+'（'+l+' µm・'+m+'）',win:'優勝！',place:r=>r+' 位',time:s=>`タイム ${s} s。`,timeout:d=>`時間切れ。${d} µm 地点まで進みました。`,
+ theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
+ stats:(h,k,f)=>`命中 ${h}・被弾 ${k}・場外 ${f}`,
+ wIn:x=>'狭小で加速中 ×'+x,wOut:x=>'広い場所では減速 ×'+x+'（Shiftで解除）',wOffIn:'Shift でONにすると加速',wOff:'Shift で切替',timeup:n=>'タイムアップまで '+n+' 秒'
+},
+en:{
+ title:'Bacteria Race 3D',
+ lead:'An item-battle race where eight bacterial species share one track. Each of the five courses weaves together non-viscous, viscous and narrow sections, and the best route depends on your species. Boost with glucose; stop rivals with phages and antibiotics.',
+ hSp:'Choose a bacterium <span>bars = measured speed (µm/s): open · viscous · narrow</span>',hCo:'Course',hMo:'Speed',go:'Start',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind.',
+ src:'Speeds: mean values for each species and environment shown in Movie S3 of <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a> (bioRxiv); for <i>B. subtilis</i> in the viscous condition the on-screen value 57.4 is used. Course layouts, shortcut gains, the wrapping boost, battle balance and catch-up are game settings, not part of the paper’s speed data. Antibiotic match-ups are a three-level simplification of Gram type, outer membrane and genus-level intrinsic resistance made for this game; they are not data from the paper, vary by strain, and must not be used for medical decisions.',
+ barL:['open','visc','narrow'],gram:g=>'Gram'+(g==='＋'?'+':'−'),wrapOK:'can wrap',
+ legend:'Antibiotic match-up　<b class="e2">◎ works well</b> · <b class="e1">○ partly</b> · <b class="e0">× resistant</b><br>',paren:(a,b)=>a+' ('+b+')',sep:' · ',
+ gramP:g=>' (Gram-'+(g==='＋'?'positive':'negative')+') — ',
+ of8:' / 8',slow:'0.4× slow motion',itemLab:'ITEM',useHint:'Space to use',tw:'Wrap',tu:'Use',quit:'Quit',again:'Race again',back:'Change bacterium / course',
+ env:['Open','Viscous','Narrow'],eff:['resistant','partly works','works well'],
+ scSign:g=>'Shortcut · viscous ×'+g,noRail:'No rails — mind the edge',lg:['■ viscous','■ narrow','■ shortcut','■ holes / no rails'],scEnv:'Shortcut (viscous)',
+ envInfo:(v,rk)=>`measured <b>${v} µm/s</b> · rank <b>${rk}</b> of 8`,inGame:v=>' · in-game '+v,pathX:g=>' · path ×'+g,
+ glu:['Glucose','Ready-to-use energy. A burst of speed for about 2 s'],bio:['Biofilm','Extracellular matrix that blocks the next attack once'],phg:['Phage','Homes in on the cell just ahead and lyses it. Drug resistance does not help'],
+ none:'None',noneSub:'Grab a spinning box to get one',got:n=>'Got '+n,
+ bioFx:'Biofilm blocked it',bioSay:'Your biofilm blocked the attack',phFx:'Phage infection!',phMe:n=>'Infected by '+n+'’s phage!',phHit:n=>'Phage hit '+n,
+ resFx:k=>k+' resistant',resMe:(n,c)=>n+'’s '+c+' → resistant, no effect!',abxMe:(n,c,e)=>n+'’s '+c+': '+e+'…',gluFx:'Glucose!',
+ phNone:'Nobody ahead. The phage found no host and drifted away',abxNone:c=>c+': nobody in range',abxZero:(c,n)=>c+': no effect on the '+n+' in range',abxHit:(c,n)=>c+': hit '+n,
+ fell:'Out of bounds! Restarting a little further back',scIn:g=>'Shortcut: viscous, but path ×'+g,wrapOn:'Wrap ON',wrapOff:'Wrap OFF',goal:n=>n+' finished!',
+ rc:(c,l,m)=>c+' ('+l+' µm · '+m+')',win:'You win!',place:r=>ord(r)+' place',time:s=>`Time ${s} s.`,timeout:d=>`Time up. You reached ${d} µm.`,
+ theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
+ stats:(h,k,f)=>`hits ${h} · taken ${k} · falls ${f}`,
+ wIn:x=>'boosting in narrow ×'+x,wOut:x=>'slower in the open ×'+x+' (Shift to release)',wOffIn:'Press Shift to boost here',wOff:'Shift to toggle',timeup:n=>'Time up in '+n+' s'
+}};
+const t=(k,...a)=>{const v=TX[lang][k];return typeof v==='function'?v(...a):v;};
+const spLocal=sp=>lang==='ja'?sp.jp:EN_SP[sp.id][0],spDesc=sp=>lang==='ja'?sp.desc:EN_SP[sp.id][1];
+const abxT=(k,f)=>lang==='ja'?ABX[k][f]:EN_ABX[k][f];
+const coT=(c,f)=>lang==='ja'?c[f]:EN_CO[c.id][f],moT=(i,f)=>lang==='ja'?MODES[i][f]:EN_MO[i][f];
 const WRAP_IN=1.25,WRAP_OUT=.85;
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
@@ -279,6 +371,15 @@ function helix(len,R,turns,thick,mat,phase){
     pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,t*len));}
   return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,5,false),mat);
 }
+function periFlagellum(L,R,z0,a,len,pitch,mat){
+  const pts=[],n=44,rho0=R+.25,zr=L/2,ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+  for(let i=0;i<=n;i++){const s=z0+(zr-z0+len)*i/n;
+    const rho=lerp(lerp(R,rho0,ss((s-z0)/.35)),.12,ss((s-(zr-.3))/1.4));
+    const A=.17*ss((s-z0)/.7)+(s>zr?.08*ss((s-zr)/1.5):0),ph=a+Math.PI*2*(s-z0)/pitch;
+    pts.push(new THREE.Vector3((rho-rho0)*Math.cos(a)+A*Math.cos(ph),(rho-rho0)*Math.sin(a)+A*Math.sin(ph),s-z0));}
+  const m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),66,.024,4,false),mat);
+  m.position.set(rho0*Math.cos(a),rho0*Math.sin(a),z0);return m;
+}
 const shieldGeo=new THREE.SphereGeometry(1,16,12);
 function buildBacterium(sp){
   const g=new THREE.Group(),spin=[];
@@ -295,12 +396,12 @@ function buildBacterium(sp){
     if(sp.shape==='polar'){
       const f=helix(4.2,.26,3,.035,fl);f.position.z=L/2-.05;g.add(f);spin.push({o:f,k:1});
       if(sp.wrap)wrap.push(f);
-    }else if(sp.shape==='tuft'){
-      for(let i=0;i<3;i++){const f=helix(3.6+i*.3,.2+i*.05,2.6,.03,fl,i*2.1);f.position.set(Math.cos(i*2.1)*.12,Math.sin(i*2.1)*.12,L/2-.05);g.add(f);spin.push({o:f,k:1});if(sp.wrap)wrap.push(f);}
-    }else if(sp.shape==='bundle'){
-      for(let i=0;i<sp.nf;i++){const a=i/sp.nf*Math.PI*2;
-        const f=helix(4+((i*37)%10)*.12,.24+(i%3)*.07,2.4+(i%2)*.5,.028,fl,a);
-        f.position.set(Math.cos(a)*R*.55,Math.sin(a)*R*.55,L/2-.25-(i%3)*.35);g.add(f);spin.push({o:f,k:1});}
+    }else if(sp.shape==='tuft'){ // polar bundle / tuft: all filaments start at the rear pole
+      for(let i=0;i<sp.nf;i++){const f=helix(3.6+i*.3,.2+i*.05,2.6,.03,fl,i*2.1);f.position.set(Math.cos(i*2.1)*.12,Math.sin(i*2.1)*.12,L/2-.05);g.add(f);spin.push({o:f,k:1});if(sp.wrap)wrap.push(f);}
+    }else if(sp.shape==='bundle'){ // peritrichous: filaments emerge around mid-body, run back along the cell and bundle behind it
+      for(let i=0;i<sp.nf;i++){
+        const f=periFlagellum(L,R,L*(-.3+.6*((i*.618)%1)),i*2.399,3.4+((i*37)%10)*.14,1.45+(i%3)*.15,fl);
+        g.add(f);spin.push({o:f,k:1});}
     }
   }
   const sh=new THREE.Mesh(shieldGeo,new THREE.MeshBasicMaterial({color:0x9dffd9,transparent:true,opacity:.22,depthWrite:false}));
@@ -348,7 +449,7 @@ const PVY=200;let preview=null;
 function setPreview(sp){
   if(preview)scene.remove(preview.g);
   preview=buildBacterium(sp);preview.g.position.set(0,PVY,0);preview.g.rotation.y=-.9;scene.add(preview.g);
-  $('bn').textContent=sp.name;$('bn').style.color=hex(sp.color);$('bd').textContent=sp.jp+'（グラム'+(sp.gram==='＋'?'陽性':'陰性')+'）― '+sp.desc;
+  $('bn').textContent=sp.name;$('bn').style.color=hex(sp.color);$('bd').textContent=spLocal(sp)+t('gramP',sp.gram)+spDesc(sp);
 }
 
 /* ================= course ================= */
@@ -494,9 +595,9 @@ function buildCourse(c){
     G.add(ribbon(xi,xo,FLOOR+.014,s.a,s.b,visM));threads(xi,xo,s.a,s.b,3.6);
     wallBlock(d=>xo(d),d=>xo(d)+s.side*.45,FLOOR,FLOOR+.55,s.a,s.b,railM,G);
     for(const[a,b]of runs(s.a,s.b,d=>s.split(d)))wallBlock(d=>xi(d)-s.side*.45,d=>xi(d),FLOOR,FLOOR+.55,a,b,railM,G);
-    const sg=label('近道 '+ENVN[1]+' ×'+s.gain.toFixed(2),'#ffd76a',1.5,false);sg.position.set(s.xs(s.a+6),3.2,-(s.a+6));G.add(sg);
+    const sg=label(t('scSign',s.gain.toFixed(2)),'#ffd76a',1.5,false);sg.position.set(s.xs(s.a+6),3.2,-(s.a+6));G.add(sg);
   }
-  for(const o of OPEN){const sg=label('柵なし 場外注意','#ffc530',1.3,false);sg.position.set(cx(o.a),4.4,-o.a);G.add(sg);}
+  for(const o of OPEN){const sg=label(t('noRail'),'#ffc530',1.3,false);sg.position.set(cx(o.a),4.4,-o.a);G.add(sg);}
   buildDeco(G,R);
 
   // pickups
@@ -530,12 +631,19 @@ function buildCourse(c){
 /* ================= menu UI ================= */
 let meIdx=7,courseIdx=0,modeIdx=0;
 const VMAX=57.4;
-$('species').innerHTML=SPECIES.map((s,i)=>`<button class="sp" data-i="${i}" style="--c:${hex(s.color)}"><div class="n"><span>${s.name}</span><em>グラム${s.gram}</em></div><div class="j">${s.jp}${s.wrap?'・<b style="color:var(--ink);font-weight:500">ラッピング可</b>':''}</div>${
-  s.v.map((v,e)=>`<div class="bar"><span style="font-family:inherit;font-size:9px;color:${ENVC[e]}">${['開','粘','狭'][e]}</span><div><i style="width:${v/VMAX*100}%"></i></div><b class="num">${v.toFixed(1)}</b></div>`).join('')
-  }<div class="chips">${s.s.map((e,k)=>`<span class="chip e${e}" title="${ABX[k].cls}: ${EFF[e]}">${ABX[k].k}${'×○◎'[e]}</span>`).join('')}</div></button>`).join('');
-$('legend').innerHTML='抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b><br>'+ABX.map(a=>`<b>${a.k}</b> ${a.cls}（${a.drug}）`).join('　');
-$('courses').innerHTML=COURSES.map((c,i)=>`<button class="co" data-g="c" data-i="${i}"><b style="color:${c.sw}">●</b> ${c.name}<small>${c.sub}</small></button>`).join('');
-$('modes').innerHTML=MODES.map((c,i)=>`<button class="co" data-g="m" data-i="${i}">${c.name}<small>${c.sub}</small></button>`).join('');
+function renderMenu(){
+  document.documentElement.lang=lang;document.title=t('title');
+  for(const[id,k]of[['t_title','title'],['t_lead','lead'],['t_hsp','hSp'],['t_hco','hCo'],['t_hmo','hMo'],['go','go'],['t_keys','keys'],['t_src','src'],
+    ['t_of','of8'],['t_slow','slow'],['t_il','itemLab'],['tw','tw'],['tu','tu'],['quit','quit'],['again','again'],['back','back']])$(id).innerHTML=t(k);
+  document.querySelectorAll('#lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
+  $('species').innerHTML=SPECIES.map((s,i)=>`<button class="sp" data-i="${i}" style="--c:${hex(s.color)}"><div class="n"><span>${s.name}</span><em>${t('gram',s.gram)}</em></div><div class="j">${spLocal(s)}${s.wrap?' · <b style="color:var(--ink);font-weight:500">'+t('wrapOK')+'</b>':''}</div>${
+    s.v.map((v,e)=>`<div class="bar"><span style="font-family:inherit;font-size:9px;color:${ENVC[e]}">${t('barL')[e]}</span><div><i style="width:${v/VMAX*100}%"></i></div><b class="num">${v.toFixed(1)}</b></div>`).join('')
+    }<div class="chips">${s.s.map((e,k)=>`<span class="chip e${e}" title="${abxT(k,'cls')}: ${t('eff')[e]}">${ABX[k].k}${'×○◎'[e]}</span>`).join('')}</div></button>`).join('');
+  $('legend').innerHTML=t('legend')+ABX.map((a,k)=>`<b>${a.k}</b> ${t('paren',abxT(k,'cls'),abxT(k,'drug'))}`).join(t('sep'));
+  $('courses').innerHTML=COURSES.map((c,i)=>`<button class="co" data-g="c" data-i="${i}"><b style="color:${c.sw}">●</b> ${coT(c,'name')}<small>${coT(c,'sub')}</small></button>`).join('');
+  $('modes').innerHTML=MODES.map((c,i)=>`<button class="co" data-g="m" data-i="${i}">${moT(i,'name')}<small>${moT(i,'sub')}</small></button>`).join('');
+}
+$('lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('br3d-lang',lang);}catch(_){}renderMenu();refreshMenu();});
 function refreshMenu(){
   document.querySelectorAll('.sp').forEach((b,i)=>b.setAttribute('aria-pressed',i===meIdx));
   document.querySelectorAll('.co').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i===(b.dataset.g==='c'?courseIdx:modeIdx)));
@@ -588,18 +696,18 @@ function startRace(){
   $('who').textContent=me().sp.name;$('who').style.color=hex(me().sp.color);
   const span=(a,b,top,col,h)=>`<i style="left:${a/LEN*100}%;width:${(b-a)/LEN*100}%;top:${top}px;height:${h||4}px;background:${col}"></i>`;
   $('psecs').innerHTML=F.map(f=>f.t==='v'?span(f.a,f.b,1,ENVC[1]):f.t==='c'?span(f.a,f.b,5,ENVC[2]):f.t==='s'?span(f.a,f.b,9,'#ffd76a'):span(f.a,f.b,13,'#ff5a3c',2)).join('');
-  $('plbls').innerHTML=`<span style="color:${ENVC[1]}">■ 粘性</span><span style="color:${ENVC[2]}">■ 狭小</span><span style="color:#ffd76a">■ 近道</span><span style="color:#ff5a3c">■ 穴・柵なし</span>`;
+  $('plbls').innerHTML=[ENVC[1],ENVC[2],'#ffd76a','#ff5a3c'].map((c,i)=>`<span style="color:${c}">${t('lg')[i]}</span>`).join('');
   $('pdots').innerHTML=racers.map(r=>`<div class="dot${r.i===meIdx?' me':''}" id="d${r.i}" style="background:${hex(r.sp.color)}"></div>`).join('');
-  $('ih').textContent=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches?'':'Space で使用';
+  $('ih').textContent=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches?'':t('useHint');
   $('wrap').classList.toggle('hidden',!me().m.wrap);$('tw').classList.toggle('hidden',!me().m.wrap);
-  $('ek').textContent=course.name;
+  $('ek').textContent=coT(course,'name');
   setEnvBanner(0,false);showItem();
 }
 function setEnvBanner(e,flash){
   lastEnv=e;const p=me(),sp=p.sp,sc=p.br;
-  $('en').textContent=sc?'近道（'+ENVN[1]+'）':ENVN[e];$('en').style.color=ENVC[e];
+  $('en').textContent=sc?t('scEnv'):t('env')[e];$('en').style.color=ENVC[e];
   const rk=SPECIES.map(s=>s.v[e]).sort((a,b)=>b-a).indexOf(sp.v[e])+1;
-  $('em').innerHTML=`実測 <b>${sp.v[e].toFixed(1)} µm/s</b>・8種中 <b>${rk} 位</b>`+(battle?`　ゲーム内 ${speedOf(sp,e).toFixed(1)}`:'')+(sc?`　道のり ×${sc.gain.toFixed(2)}`:'');
+  $('em').innerHTML=t('envInfo',sp.v[e].toFixed(1),rk)+(battle?t('inGame',speedOf(sp,e).toFixed(1)):'')+(sc?t('pathX',sc.gain.toFixed(2)):'');
   if(flash){const el=$('env');el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}
 }
 function say(t,dur){$('msg').innerHTML=t;$('msg').classList.add('on');msgT=dur||1.6;}
@@ -614,18 +722,18 @@ function order(){
 /* ---------- items ---------- */
 function itemInfo(it){
   if(it==null)return null;
-  if(it==='glu')return{name:'グルコース',sub:'すぐ使えるエネルギー源。2秒ほど急加速',col:'#fff07a'};
-  if(it==='bio')return{name:'バイオフィルム',sub:'菌体外マトリクスで次の攻撃を1回防ぐ',col:'#9dffd9'};
-  if(it==='phg')return{name:'ファージ',sub:'すぐ前の1菌を追尾して感染・溶菌。薬剤耐性は関係なし',col:'#b0ff5a'};
-  const a=ABX[it];return{name:a.cls+'（'+a.drug+'）',sub:a.mech,col:hex(a.col),abx:a,k:it};
+  if(it==='glu')return{name:t('glu')[0],sub:t('glu')[1],col:'#fff07a'};
+  if(it==='bio')return{name:t('bio')[0],sub:t('bio')[1],col:'#9dffd9'};
+  if(it==='phg')return{name:t('phg')[0],sub:t('phg')[1],col:'#b0ff5a'};
+  const a=ABX[it];return{name:t('paren',abxT(it,'cls'),abxT(it,'drug')),sub:abxT(it,'mech'),col:hex(a.col),abx:a,k:it};
 }
 function showItem(){
   const p=me(),inf=itemInfo(p.item),el=$('item');
   el.classList.toggle('empty',!inf);
-  if(!inf){$('in').textContent='なし';$('in').style.color='';$('is').textContent='回転する箱を取ると手に入る';$('ic').innerHTML='';return;}
+  if(!inf){$('in').textContent=t('none');$('in').style.color='';$('is').textContent=t('noneSub');$('ic').innerHTML='';return;}
   $('in').textContent=inf.name;$('in').style.color=inf.col;$('is').textContent=inf.sub;
   $('ic').innerHTML=inf.abx?racers.filter(r=>r!==p).map(r=>{const e=r.sp.s[inf.k];
-    return `<span class="e${e}" style="color:${hex(r.sp.color)}" title="${EFF[e]}">${r.sp.ab}${'×○◎'[e]}</span>`;}).join(''):'';
+    return `<span class="e${e}" style="color:${hex(r.sp.color)}" title="${t('eff')[e]}">${r.sp.ab}${'×○◎'[e]}</span>`;}).join(''):'';
 }
 function rollItem(r){
   const o=order().filter(x=>x.finish==null),f=o.length>1?o.indexOf(r)/(o.length-1):0;
@@ -634,46 +742,46 @@ function rollItem(r){
 }
 function giveItem(r){
   r.item=rollItem(r);r.itemT=1+Math.random()*2.5;r.tries=0;
-  if(r===me()){showItem();say(itemInfo(r.item).name+' を入手',1.1);}
+  if(r===me()){showItem();say(t('got',itemInfo(r.item).name),1.1);}
 }
-function strike(t,src,kind,k){ // returns true if it had an effect
-  if(t.finish!=null||t.immT>0||t.fallT>0)return false;
+function strike(tg,src,kind,k){ // returns true if it had an effect
+  if(tg.finish!=null||tg.immT>0||tg.fallT>0)return false;
   const p=me();
-  if(t.shieldT>0){t.shieldT=0;fx(t,'バイオフィルムで防御','#9dffd9');if(t===p)say('バイオフィルムが攻撃を防いだ');return false;}
-  if(kind==='phg'){t.spinT=1.7;t.immT=3.7;t.taken++;src.hits++;fx(t,'ファージ感染！','#b0ff5a');
-    if(t===p){shake=.6;say(nm(src)+' のファージに感染！',1.8);}
-    else if(src===p)say(nm(t)+' にファージ命中');return true;}
-  const a=ABX[k],e=t.sp.s[k];
-  if(e===0){fx(t,a.k+' 耐性','#8fa5b0');if(t===p)say(nm(src)+' の'+a.cls+' → 耐性で無効！',1.8);return false;}
-  t.slowT=e===2?2.6:2;t.slowM=e===2?.45:.72;t.immT=t.slowT+2;t.slowCol=a.col;t.taken++;src.hits++;
-  fx(t,a.k+' '+EFF[e],hex(a.col));
-  if(t===p){shake=e===2?.5:.25;say(nm(src)+' の'+a.cls+'：'+EFF[e]+'…',1.8);}
+  if(tg.shieldT>0){tg.shieldT=0;fx(tg,t('bioFx'),'#9dffd9');if(tg===p)say(t('bioSay'));return false;}
+  if(kind==='phg'){tg.spinT=1.7;tg.immT=3.7;tg.taken++;src.hits++;fx(tg,t('phFx'),'#b0ff5a');
+    if(tg===p){shake=.6;say(t('phMe',nm(src)),1.8);}
+    else if(src===p)say(t('phHit',nm(tg)));return true;}
+  const a=ABX[k],e=tg.sp.s[k];
+  if(e===0){fx(tg,t('resFx',a.k),'#8fa5b0');if(tg===p)say(t('resMe',nm(src),abxT(k,'cls')),1.8);return false;}
+  tg.slowT=e===2?2.6:2;tg.slowM=e===2?.45:.72;tg.immT=tg.slowT+2;tg.slowCol=a.col;tg.taken++;src.hits++;
+  fx(tg,a.k+' '+t('eff')[e],hex(a.col));
+  if(tg===p){shake=e===2?.5:.25;say(t('abxMe',nm(src),abxT(k,'cls'),t('eff')[e]),1.8);}
   return true;
 }
 const inRange=(u,t)=>t!==u&&t.finish==null&&t.dist>u.dist-15&&t.dist<u.dist+60;
 function useItem(r){
   const it=r.item,p=me();if(it==null)return;
   r.item=null;
-  if(it==='glu'){r.boostT=2.2;fx(r,'グルコース！','#fff07a');}
+  if(it==='glu'){r.boostT=2.2;fx(r,t('gluFx'),'#fff07a');}
   else if(it==='bio'){r.shieldT=7;}
   else if(it==='phg'){
-    const tg=racers.filter(t=>t!==r&&t.finish==null&&t.dist>r.dist).sort((a,b)=>a.dist-b.dist)[0];
-    if(!tg){if(r===p)say('前に誰もいない。ファージは宿主を見つけられず拡散した');}
+    const tg=racers.filter(o=>o!==r&&o.finish==null&&o.dist>r.dist).sort((a,b)=>a.dist-b.dist)[0];
+    if(!tg){if(r===p)say(t('phNone'));}
     else{const g=buildPhage();scene.add(g);phages.push({g,src:r,tg,d:r.dist+1,x:rx(r),t:0});}
   }else{
     const a=ABX[it];
     const m=new THREE.Mesh(new THREE.TorusGeometry(1,.06,6,48),new THREE.MeshBasicMaterial({color:a.col,transparent:true,opacity:.9}));
     m.rotation.x=Math.PI/2;scene.add(m);waves.push({m,r,t:0});
-    let n=0,any=0;for(const t of racers)if(inRange(r,t)){any++;if(strike(t,r,'abx',it))n++;}
-    if(r===p)say(any===0?a.cls+'：射程内に誰もいない':n===0?a.cls+'：射程内の '+any+' 菌には効かなかった':a.cls+'：'+n+' 菌に命中',1.8);
+    let n=0,any=0;for(const o of racers)if(inRange(r,o)){any++;if(strike(o,r,'abx',it))n++;}
+    if(r===p){const c=abxT(it,'cls');say(any===0?t('abxNone',c):n===0?t('abxZero',c,any):t('abxHit',c,n),1.8);}
   }
   if(r===p)showItem();
 }
 function aiItem(r,dt){
   if(r.item==null||(r.itemT-=dt)>0)return;
   const it=r.item;let ok=true;
-  if(it==='phg')ok=racers.some(t=>t!==r&&t.finish==null&&t.dist>r.dist);
-  else if(typeof it==='number')ok=racers.some(t=>inRange(r,t)&&t.sp.s[it]>0);
+  if(it==='phg')ok=racers.some(o=>o!==r&&o.finish==null&&o.dist>r.dist);
+  else if(typeof it==='number')ok=racers.some(o=>inRange(r,o)&&o.sp.s[it]>0);
   else if(it==='bio')ok=r.shieldT<=0;
   if(ok||++r.tries>3)useItem(r);else r.itemT=1.5+Math.random();
 }
@@ -714,7 +822,7 @@ function aiSteer(r,dt){
 }
 function fall(r){
   r.fallT=.8;r.v=0;r.falls++;r.boostT=0;
-  if(r===me()){shake=.5;say('場外！少し手前からやり直し',1.6);}
+  if(r===me()){shake=.5;say(t('fell'),1.6);}
 }
 function respawn(r){
   const d0=Math.max(0,r.dist-12);let lat=0;
@@ -750,7 +858,7 @@ function stepRace(dt){
       // peel off into a shortcut
       for(const s of SCS)if(r.dist>s.a&&r.dist<s.a+14&&!s.split(r.dist)&&r.lat*s.side>=s.rel(r.dist)-SW+.4&&r.lat*s.side>HW-2.6){
         r.br=s;r.blat=clamp(cx(r.dist)+r.lat-s.xs(r.dist),-(SW-.5),SW-.5);
-        if(r===p)say('近道へ：'+ENVN[1]+'だが道のり ×'+s.gain.toFixed(2),1.6);break;}
+        if(r===p)say(t('scIn',s.gain.toFixed(2)),1.6);break;}
     }
     if(r===p){if(usePressed&&!done&&r.spinT<=0)useItem(r);}else if(!done)aiItem(r,dt);
     for(const k of['boostT','slowT','spinT','shieldT','immT'])if(r[k]>0)r[k]-=dt;
@@ -759,7 +867,7 @@ function stepRace(dt){
     if(r!==p)mult*=1+.04*Math.sin(clock/TS*r.fq+r.ph);
     if(r.m.wrap){
       if(r!==p)r.wrapOn=e===2;
-      else if(wrapPressed&&!done){r.wrapOn=!r.wrapOn;fx(r,r.wrapOn?'ラッピング ON':'ラッピング OFF','#ffffff');}
+      else if(wrapPressed&&!done){r.wrapOn=!r.wrapOn;fx(r,t(r.wrapOn?'wrapOn':'wrapOff'),'#ffffff');}
       r.wrapK=clamp(r.wrapK+(r.wrapOn?1:-1)*2.5*dt,0,1);
       mult*=lerp(1,e===2?(r.sp.wrapIn||WRAP_IN):WRAP_OUT,r.wrapK);
     }
@@ -768,7 +876,7 @@ function stepRace(dt){
     r.v+=(speedOf(r.sp,e)*mult-r.v)*Math.min(1,dt*5);
     const nd=r.dist+r.v*dt*TS*(r.br?r.br.gain:1);
     if(!done&&nd>=LEN){r.finish=clock-(nd-LEN)/Math.max(r.v,.01);
-      if(firstFin==null){firstFin=clock;endAt=DEADLINE;if(r!==p)say(nm(r)+' がゴール！');}}
+      if(firstFin==null){firstFin=clock;endAt=DEADLINE;if(r!==p)say(t('goal',nm(r)));}}
     r.dist=nd;
     if(r.br&&r.dist>=r.br.b){r.lat=clamp(r.br.xs(r.br.b)+r.blat-cx(r.br.b),-EDGE,EDGE);r.tl=r.lat;r.br=null;}
   }
@@ -807,13 +915,13 @@ function finish(){
   state='done';
   const o=order(),p=me(),rank=o.indexOf(p)+1;
   const theo=SPECIES.map(s=>{let t=0;for(let d=0;d<LEN;d+=2)t+=2/speedOf(s,envAt(d,0));return{s,t};}).sort((a,b)=>a.t-b.t);
-  $('rc').textContent=course.name+'（'+LEN+' µm・'+MODES[modeIdx].name+'）';
-  $('rh').textContent=rank===1?'優勝！':rank+' 位';
+  $('rc').textContent=t('rc',coT(course,'name'),LEN,moT(modeIdx,'name'));
+  $('rh').textContent=rank===1?t('win'):t('place',rank);
   const myTheo=theo.findIndex(x=>x.s===p.sp)+1;
-  $('rs').innerHTML=(p.finish!=null?`タイム ${p.finish.toFixed(2)} s。`:`時間切れ。${Math.max(0,p.dist).toFixed(1)} µm 地点まで進みました。`)
-    +`<br>何もせず中央をまっすぐ進んだ場合の本命は <i style="color:${hex(theo[0].s.color)}">${theo[0].s.name}</i>、<i>${p.sp.name}</i> は ${myTheo} 番手。`
-    +(rank<myTheo?'ルート選びとバトルで順位を押し上げました。':rank>myTheo?'妨害か場外にやられました。':'');
-  $('rt').innerHTML=o.map((r,i)=>`<tr class="${r===p?'me':''}"><td>${i+1}</td><td><span class="nm" style="color:${hex(r.sp.color)}">${r.sp.name}</span>${r===p?'<span class="you">YOU</span>':''}</td><td class="h num">命中 ${r.hits}・被弾 ${r.taken}・場外 ${r.falls}</td><td class="num">${
+  $('rs').innerHTML=(p.finish!=null?t('time',p.finish.toFixed(2)):t('timeout',Math.max(0,p.dist).toFixed(1)))
+    +t('theo',`<i style="color:${hex(theo[0].s.color)}">${theo[0].s.name}</i>`,`<i>${p.sp.name}</i>`,myTheo)
+    +(rank<myTheo?t('up'):rank>myTheo?t('down'):'');
+  $('rt').innerHTML=o.map((r,i)=>`<tr class="${r===p?'me':''}"><td>${i+1}</td><td><span class="nm" style="color:${hex(r.sp.color)}">${r.sp.name}</span>${r===p?'<span class="you">YOU</span>':''}</td><td class="h num">${t('stats',r.hits,r.taken,r.falls)}</td><td class="num">${
     r.finish!=null?r.finish.toFixed(2)+' s':clamp(r.dist,0,LEN).toFixed(1)+' µm'}</td></tr>`).join('');
   $('result').classList.remove('hidden');
 }
@@ -882,16 +990,16 @@ function frame(now){
   // HUD
   if(p.m.wrap){const in3=renv(p)===2,el=$('wrap');
     el.classList.toggle('on',p.wrapOn);el.classList.toggle('warn',p.wrapOn!==in3);
-    $('wk').textContent='ラッピング '+(p.wrapOn?'ON':'OFF');
-    $('wh').textContent=p.wrapOn?(in3?'狭小で加速中 ×'+(p.sp.wrapIn||WRAP_IN):'広い場所では減速 ×'+WRAP_OUT+'（Shiftで解除）'):(in3?'Shift でONにすると加速':'Shift で切替');}
+    $('wk').textContent=t(p.wrapOn?'wrapOn':'wrapOff');
+    $('wh').textContent=p.wrapOn?(in3?t('wIn',p.sp.wrapIn||WRAP_IN):t('wOut',WRAP_OUT)):t(in3?'wOffIn':'wOff');}
   $('rk').textContent=o.indexOf(p)+1;
   $('tm').textContent=(p.finish!=null?p.finish:clock).toFixed(2);
   $('sv').textContent=p.v.toFixed(1);
   for(const r of racers){const d=$('d'+r.i);if(d)d.style.left=clamp(r.dist/LEN*100,0,100)+'%';}
-  if(state==='race'&&firstFin!=null&&p.finish==null&&endAt!=null&&msgT<=0){$('msg').textContent='タイムアップまで '+Math.ceil(endAt)+' 秒';$('msg').classList.add('on');}
+  if(state==='race'&&firstFin!=null&&p.finish==null&&endAt!=null&&msgT<=0){$('msg').textContent=t('timeup',Math.ceil(endAt));$('msg').classList.add('on');}
   renderer.render(scene,camera);
 }
-refreshMenu();
+renderMenu();refreshMenu();
 requestAnimationFrame(frame);
 })();
 </script>
