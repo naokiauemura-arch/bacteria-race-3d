@@ -343,6 +343,7 @@ const abxT=(k,f)=>lang==='ja'?ABX[k][f]:EN_ABX[k][f];
 const coT=(c,f)=>lang==='ja'?c[f]:EN_CO[c.id][f],moT=(i,f)=>lang==='ja'?MODES[i][f]:EN_MO[i][f];
 const WRAP_IN=1.25,WRAP_OUT=.85;
 const sprbV=v=>v>.2?2+v*.12:0;
+const MAXM=1.9;   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
 const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -944,13 +945,14 @@ function stepRace(dt){
     }
     const chi=!r.br&&!done&&chitinAt(r.dist,r.lat),dig=r.sp.chitin;
     if(dig||r.sp.chiStick){
-      r.chiT=clamp(r.chiT+(chi?dt/(dig?.55:.5):-dt/(dig?1.4:1.1)),0,1);
-      mult*=lerp(1,dig?1.9:.6,r.chiT);
+      r.chiT=clamp(r.chiT+(chi?dt/(dig?1.2:.5):-dt/(dig?2.5:1.1)),0,1);
+      mult*=lerp(1,dig?1.8:.6,r.chiT);
       if(chi&&!r.chiOn){r.chiOn=true;fx(r,t(dig?'chiFx':'chiStickFx'),dig?'#eaf4ef':'#9fd0ff');
         if(r===p&&!chiMsg){chiMsg=true;say(t(dig?'chiSay':'chiStickSay'),2.4);}}
       else if(!chi)r.chiOn=false;
     }else if(chi&&r===p&&!chiMsg){chiMsg=true;say(t('chiNo'),2.2);}
     if(battle)mult*=1+Math.min(.12,Math.max(0,lead-r.dist)/500);
+    if(mult>MAXM)mult=MAXM;
     if(done)mult=r.dist<LEN+6+r.i?.5:0;
     r.v+=(speedOf(r.sp,e)*mult-r.v)*Math.min(1,dt*5);
     const nd=r.dist+r.v*dt*TS*(r.br?r.br.gain:1);
