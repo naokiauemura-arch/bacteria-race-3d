@@ -342,6 +342,7 @@ const spLocal=sp=>lang==='ja'?sp.jp:EN_SP[sp.id][0],spDesc=sp=>lang==='ja'?sp.de
 const abxT=(k,f)=>lang==='ja'?ABX[k][f]:EN_ABX[k][f];
 const coT=(c,f)=>lang==='ja'?c[f]:EN_CO[c.id][f],moT=(i,f)=>lang==='ja'?MODES[i][f]:EN_MO[i][f];
 const WRAP_IN=1.25,WRAP_OUT=.85;
+const sprbV=v=>v>.2?2+v*.12:0;
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
 const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -421,9 +422,9 @@ function buildBacterium(sp){
         return[Math.cos(th)*rr,Math.sin(th)*rr,z,th];};
       const lp=[];for(let i=0;i<=200;i++){const p=track((i%200)/200);lp.push(p[0],p[1],p[2]);}
       const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3));
-      g.add(new THREE.Line(tg,new THREE.LineBasicMaterial({color:0xffe9a0,transparent:true,opacity:.3})));
+      g.add(new THREE.Line(tg,new THREE.LineBasicMaterial({color:0xfff3c8,transparent:true,opacity:.5})));
       const dm=new THREE.MeshBasicMaterial({color:0xfff6cc});
-      const kg=new THREE.SphereGeometry(.075,8,6);
+      const kg=new THREE.SphereGeometry(.065,8,6);
       const sg=new THREE.CylinderGeometry(.016,.016,.15,5);sg.rotateZ(Math.PI/2);sg.translate(.075,0,0);
       sprb={track,h,list:[],u:0};
       for(let i=0;i<9;i++){const d=new THREE.Group();d.add(new THREE.Mesh(kg,dm));d.add(new THREE.Mesh(sg,dm));
@@ -435,7 +436,7 @@ function buildBacterium(sp){
   return {g,spin,waves,th:0,sprb,rollK,wrap:wrap.length?wrap:null,sp,body,base:col.clone().multiplyScalar(.35),shield:sh};
 }
 function updSprB(m,v,dt){
-  const S=m.sprb;S.u=(S.u+v*dt*TS/(4*S.h))%1;
+  const S=m.sprb,ve=sprbV(v);S.u=(S.u+ve*dt*TS/(4*S.h))%1;
   for(const o of S.list){const p=S.track((S.u+o.u0)%1);o.d.position.set(p[0],p[1],p[2]);o.d.rotation.z=p[3];}
 }
 function spinModel(m,rate,dt){for(const s of m.spin)s.o.rotation.z-=s.k*rate*dt;if(m.waves.length){m.th+=rate*dt;for(const w of m.waves)w.upd(m.th);}}
@@ -1015,7 +1016,7 @@ function frame(now){
     else if(r.spinT>0){g.rotation.y+=dt*16;g.rotation.x=Math.sin(tAll*30)*.5;}
     else{const steer=r===p?((keys.right?1:0)-(keys.left?1:0)):clamp(r.tl-r.lat,-1,1);
       g.rotation.y=lerp(g.rotation.y%(Math.PI*2),head-steer*.22,.2);g.rotation.x=0;
-      g.rotation.z=r.m.sprb?g.rotation.z+r.v*dt*TS*r.m.rollK:Math.sin(tAll*9+r.ph)*.07*Math.min(1,r.v/10);}
+      g.rotation.z=r.m.sprb?g.rotation.z+sprbV(r.v)*dt*TS*r.m.rollK:Math.sin(tAll*9+r.ph)*.07*Math.min(1,r.v/10);}
     if(r.m.wrap)for(const w of r.m.wrap){const k=r.wrapK*r.wrapK*(3-2*r.wrapK),xy=lerp(1,2.1,k);w.scale.set(xy,xy,lerp(1,-.62,k));}
     r.m.shield.visible=r.shieldT>0;
     if(r.slowT>0)r.m.body.emissive.set(r.slowCol).multiplyScalar(.5+.4*Math.sin(tAll*14));
