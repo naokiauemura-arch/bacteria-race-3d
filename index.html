@@ -366,9 +366,9 @@ function capsule(len,rad,mat){
   for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(rad,18,12),mat);e.position.z=s*(len/2-rad);g.add(e);}
   return g;
 }
-function helix(len,R,turns,thick,mat,phase,cap){
+function helix(len,R,turns,thick,mat,phase,cap,hand){
   const pts=[],n=Math.max(24,Math.round(turns*16));
-  for(let i=0;i<=n;i++){const t=i/n,a=(phase||0)+t*turns*Math.PI*2,r=R*Math.min(1,t*5);
+  for(let i=0;i<=n;i++){const t=i/n,a=(phase||0)+(hand||1)*t*turns*Math.PI*2,r=R*Math.min(1,t*5);
     pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,t*len));}
   const tube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,cap?10:5,false),mat);
   if(!cap)return tube;
@@ -402,9 +402,12 @@ function buildBacterium(sp){
   const fl=new THREE.MeshBasicMaterial({color:col.clone().lerp(new THREE.Color(0xffffff),.45),transparent:true,opacity:.85});
   let wrap=[],sprb=null,rollK=0,L=sp.len||2.6;
   if(sp.shape==='spiral'){
-    const b=helix(2.6,.17,1.6,.2,body,0,true);b.position.z=-1.3;g.add(b);spin.push({o:b,k:.5});
-    const r=helix(3,.2,2.6,.035,fl);r.position.z=1.25;g.add(r);spin.push({o:r,k:1});
-    const f=helix(2.2,.2,2,.035,fl);f.rotation.y=Math.PI;f.position.z=-1.25;g.add(f);spin.push({o:f,k:-1});if(sp.wrap)wrap.push(f);
+    // Cohen et al. 2020: the cell body is a right-handed helix and the filament a left-handed one,
+    // and their helical angles are about the same (~40 deg). PITCH gives 40 deg at amplitude AMP.
+    const AMP=.17,PITCH=2*Math.PI*AMP/Math.tan(40*Math.PI/180),BL=1.7,RL=2.6,FL=2.2;
+    const b=helix(BL,AMP,BL/PITCH,.19,body,0,true,1);b.position.z=-BL/2;g.add(b);spin.push({o:b,k:.5});
+    const r=helix(RL,AMP,RL/PITCH,.032,fl,0,false,-1);r.position.z=BL/2-.03;g.add(r);spin.push({o:r,k:1});
+    const f=helix(FL,AMP,FL/PITCH,.032,fl,0,false,-1);f.rotation.y=Math.PI;f.position.z=-BL/2+.03;g.add(f);spin.push({o:f,k:-1});if(sp.wrap)wrap.push(f);
   }else{
     const R=sp.rad;g.add(capsule(L,R,body));
     if(sp.shape==='polar'){
