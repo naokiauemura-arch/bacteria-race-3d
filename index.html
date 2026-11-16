@@ -371,17 +371,26 @@ function helix(len,R,turns,thick,mat,phase){
     pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,t*len));}
   return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,5,false),mat);
 }
-function periRoot(L,R,z0,a,zb,mat){ // static part of a peritrichous filament: surface -> along the body -> the bundle axis at zb
-  const pts=[],n=26,rho0=R+.16,ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
-  for(let i=0;i<=n;i++){const s=z0+(zb-z0)*i/n;
-    const rho=lerp(lerp(R,rho0,ss((s-z0)/.35)),0,ss((s-(L/2-.35))/(zb-L/2+.35)));
-    const w=.05*Math.sin((s-z0)*4.2)*ss((s-z0)/.5)*ss((zb-s)/.5),an=a+w/Math.max(rho,.2);
-    pts.push(new THREE.Vector3(rho*Math.cos(an),rho*Math.sin(an),s));}
-  return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),34,.024,4,false),mat);
+// A flagellar filament whose helical wave is recomputed every frame, so it visibly rotates along its whole
+// length: rooted on the cell surface at (z0, angle a), running back beside the body, then converging over
+// ~2.6 µm onto the cell axis, where all filaments share one helix (the bundle).
+function waveFilament(L,R,z0,a,len,delta,mat){
+  const N=52,pos=new Float32Array(N*4*3),idx=[];
+  for(let i=0;i<N-1;i++)for(let j=0;j<4;j++){const p=i*4+j,q=i*4+(j+1)%4;idx.push(p,q,p+4,q,q+4,p+4);}
+  const g=new THREE.BufferGeometry(),at=new THREE.BufferAttribute(pos,3);g.setAttribute('position',at);g.setIndex(idx);
+  const m=new THREE.Mesh(g,mat);m.frustumCulled=false;
+  const ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);},zr=L/2,s1=zr+len,ca=Math.cos(a),sa=Math.sin(a),T=.024,K=2*Math.PI/1.4;
+  const upd=th=>{
+    for(let i=0;i<N;i++){const s=z0+(s1-z0)*i/(N-1);
+      const rho=lerp(lerp(R,R+.16,ss((s-z0)/.35)),0,ss((s-(zr-.4))/2.6));
+      const A=.16*ss((s-z0)/.6)+.05*ss((s-zr)/2),ph=K*s+delta-th,x=rho*ca+A*Math.cos(ph),y=rho*sa+A*Math.sin(ph);
+      for(let j=0;j<4;j++){const o=(i*4+j)*3,t=j*Math.PI/2;pos[o]=x+T*Math.cos(t);pos[o+1]=y+T*Math.sin(t);pos[o+2]=s;}}
+    at.needsUpdate=true;};
+  upd(0);return {m,upd};
 }
 const shieldGeo=new THREE.SphereGeometry(1,16,12);
 function buildBacterium(sp){
-  const g=new THREE.Group(),spin=[];
+  const g=new THREE.Group(),spin=[],waves=[];
   const col=new THREE.Color(sp.color);
   const body=new THREE.MeshStandardMaterial({color:col,emissive:col.clone().multiplyScalar(.35),roughness:.45,metalness:.05});
   const fl=new THREE.MeshBasicMaterial({color:col.clone().lerp(new THREE.Color(0xffffff),.45),transparent:true,opacity:.85});
@@ -397,19 +406,18 @@ function buildBacterium(sp){
       if(sp.wrap)wrap.push(f);
     }else if(sp.shape==='tuft'){ // polar bundle / tuft: filaments share one helix behind the pole
       for(let i=0;i<sp.nf;i++){const f=helix(3.8,.21+i*.015,2.7,.03,fl,i*.3);f.position.z=L/2-.05;g.add(f);spin.push({o:f,k:1});if(sp.wrap)wrap.push(f);}
-    }else if(sp.shape==='bundle'){ // peritrichous: filaments emerge around mid-body, run back along the cell and join one bundle behind it
-      const zb=L/2+.7,bun=new THREE.Group();bun.position.z=zb;g.add(bun);spin.push({o:bun,k:1});
+    }else if(sp.shape==='bundle'){ // peritrichous: each filament is a rotating helix from its root at mid-body, merging gradually into one bundle behind the cell
+      const flw=fl.clone();flw.side=THREE.DoubleSide;
       for(let i=0;i<sp.nf;i++){
-        g.add(periRoot(L,R,L*(-.3+.6*((i*.618)%1)),i*2.399,zb,fl));
-        bun.add(helix(3.8+((i*37)%10)*.03,.2+((i*7)%5)*.012,2.7,.024,fl,(((i*.618)%1)-.5)*.7));
-      }
+        const w=waveFilament(L,R,L*(-.3+.6*((i*.618)%1)),i*2.399,4.2+((i*37)%10)*.05,(((i*.618)%1)-.5)*.7,flw);
+        g.add(w.m);waves.push(w);}
     }
   }
   const sh=new THREE.Mesh(shieldGeo,new THREE.MeshBasicMaterial({color:0x9dffd9,transparent:true,opacity:.22,depthWrite:false}));
   sh.scale.set(1.1,1.1,L/2+1);sh.visible=false;g.add(sh);
-  return {g,spin,wrap:wrap.length?wrap:null,sp,body,base:col.clone().multiplyScalar(.35),shield:sh};
+  return {g,spin,waves,th:0,wrap:wrap.length?wrap:null,sp,body,base:col.clone().multiplyScalar(.35),shield:sh};
 }
-function spinModel(m,rate,dt){for(const s of m.spin)s.o.rotation.z-=s.k*rate*dt;}
+function spinModel(m,rate,dt){for(const s of m.spin)s.o.rotation.z-=s.k*rate*dt;if(m.waves.length){m.th+=rate*dt;for(const w of m.waves)w.upd(m.th);}}
 
 function textSprite(w,scale){
   const c=document.createElement('canvas');c.width=w;c.height=96;
