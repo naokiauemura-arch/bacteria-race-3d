@@ -366,11 +366,16 @@ function capsule(len,rad,mat){
   for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(rad,18,12),mat);e.position.z=s*(len/2-rad);g.add(e);}
   return g;
 }
-function helix(len,R,turns,thick,mat,phase){
+function helix(len,R,turns,thick,mat,phase,cap){
   const pts=[],n=Math.max(24,Math.round(turns*16));
   for(let i=0;i<=n;i++){const t=i/n,a=(phase||0)+t*turns*Math.PI*2,r=R*Math.min(1,t*5);
     pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,t*len));}
-  return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,5,false),mat);
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,cap?10:5,false),mat);
+  if(!cap)return tube;
+  const g=new THREE.Group();g.add(tube);
+  const cg=new THREE.SphereGeometry(thick,14,10);
+  for(const p of[pts[0],pts[pts.length-1]]){const e=new THREE.Mesh(cg,mat);e.position.copy(p);g.add(e);}
+  return g;
 }
 // A flagellar filament whose helical wave is recomputed every frame, so it visibly rotates along its whole
 // length: rooted on the cell surface at (z0, angle a), running back beside the body, then converging over
@@ -397,7 +402,7 @@ function buildBacterium(sp){
   const fl=new THREE.MeshBasicMaterial({color:col.clone().lerp(new THREE.Color(0xffffff),.45),transparent:true,opacity:.85});
   let wrap=[],sprb=null,rollK=0,L=sp.len||2.6;
   if(sp.shape==='spiral'){
-    const b=helix(2.6,.17,1.6,.2,body);b.position.z=-1.3;g.add(b);spin.push({o:b,k:.5});
+    const b=helix(2.6,.17,1.6,.2,body,0,true);b.position.z=-1.3;g.add(b);spin.push({o:b,k:.5});
     const r=helix(3,.2,2.6,.035,fl);r.position.z=1.25;g.add(r);spin.push({o:r,k:1});
     const f=helix(2.2,.2,2,.035,fl);f.rotation.y=Math.PI;f.position.z=-1.25;g.add(f);spin.push({o:f,k:-1});if(sp.wrap)wrap.push(f);
   }else{
