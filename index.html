@@ -371,14 +371,13 @@ function helix(len,R,turns,thick,mat,phase){
     pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,t*len));}
   return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,thick,5,false),mat);
 }
-function periFlagellum(L,R,z0,a,len,pitch,mat){
-  const pts=[],n=44,rho0=R+.25,zr=L/2,ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
-  for(let i=0;i<=n;i++){const s=z0+(zr-z0+len)*i/n;
-    const rho=lerp(lerp(R,rho0,ss((s-z0)/.35)),.12,ss((s-(zr-.3))/1.4));
-    const A=.17*ss((s-z0)/.7)+(s>zr?.08*ss((s-zr)/1.5):0),ph=a+Math.PI*2*(s-z0)/pitch;
-    pts.push(new THREE.Vector3((rho-rho0)*Math.cos(a)+A*Math.cos(ph),(rho-rho0)*Math.sin(a)+A*Math.sin(ph),s-z0));}
-  const m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),66,.024,4,false),mat);
-  m.position.set(rho0*Math.cos(a),rho0*Math.sin(a),z0);return m;
+function periRoot(L,R,z0,a,zb,mat){ // static part of a peritrichous filament: surface -> along the body -> the bundle axis at zb
+  const pts=[],n=26,rho0=R+.16,ss=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+  for(let i=0;i<=n;i++){const s=z0+(zb-z0)*i/n;
+    const rho=lerp(lerp(R,rho0,ss((s-z0)/.35)),0,ss((s-(L/2-.35))/(zb-L/2+.35)));
+    const w=.05*Math.sin((s-z0)*4.2)*ss((s-z0)/.5)*ss((zb-s)/.5),an=a+w/Math.max(rho,.2);
+    pts.push(new THREE.Vector3(rho*Math.cos(an),rho*Math.sin(an),s));}
+  return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),34,.024,4,false),mat);
 }
 const shieldGeo=new THREE.SphereGeometry(1,16,12);
 function buildBacterium(sp){
@@ -396,12 +395,14 @@ function buildBacterium(sp){
     if(sp.shape==='polar'){
       const f=helix(4.2,.26,3,.035,fl);f.position.z=L/2-.05;g.add(f);spin.push({o:f,k:1});
       if(sp.wrap)wrap.push(f);
-    }else if(sp.shape==='tuft'){ // polar bundle / tuft: all filaments start at the rear pole
-      for(let i=0;i<sp.nf;i++){const f=helix(3.6+i*.3,.2+i*.05,2.6,.03,fl,i*2.1);f.position.set(Math.cos(i*2.1)*.12,Math.sin(i*2.1)*.12,L/2-.05);g.add(f);spin.push({o:f,k:1});if(sp.wrap)wrap.push(f);}
-    }else if(sp.shape==='bundle'){ // peritrichous: filaments emerge around mid-body, run back along the cell and bundle behind it
+    }else if(sp.shape==='tuft'){ // polar bundle / tuft: filaments share one helix behind the pole
+      for(let i=0;i<sp.nf;i++){const f=helix(3.8,.21+i*.015,2.7,.03,fl,i*.3);f.position.z=L/2-.05;g.add(f);spin.push({o:f,k:1});if(sp.wrap)wrap.push(f);}
+    }else if(sp.shape==='bundle'){ // peritrichous: filaments emerge around mid-body, run back along the cell and join one bundle behind it
+      const zb=L/2+.7,bun=new THREE.Group();bun.position.z=zb;g.add(bun);spin.push({o:bun,k:1});
       for(let i=0;i<sp.nf;i++){
-        const f=periFlagellum(L,R,L*(-.3+.6*((i*.618)%1)),i*2.399,3.4+((i*37)%10)*.14,1.45+(i%3)*.15,fl);
-        g.add(f);spin.push({o:f,k:1});}
+        g.add(periRoot(L,R,L*(-.3+.6*((i*.618)%1)),i*2.399,zb,fl));
+        bun.add(helix(3.8+((i*37)%10)*.03,.2+((i*7)%5)*.012,2.7,.024,fl,(((i*.618)%1)-.5)*.7));
+      }
     }
   }
   const sh=new THREE.Mesh(shieldGeo,new THREE.MeshBasicMaterial({color:0x9dffd9,transparent:true,opacity:.22,depthWrite:false}));
