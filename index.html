@@ -343,7 +343,7 @@ const abxT=(k,f)=>lang==='ja'?ABX[k][f]:EN_ABX[k][f];
 const coT=(c,f)=>lang==='ja'?c[f]:EN_CO[c.id][f],moT=(i,f)=>lang==='ja'?MODES[i][f]:EN_MO[i][f];
 const WRAP_IN=1.25,WRAP_OUT=.85;
 const sprbV=v=>v>.2?2+v*.12:0;
-const MAXM=1.9;   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
+const MAXM=1.6;   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
 const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -643,9 +643,9 @@ function buildCourse(c){
   // boost builds while the cell stays on the patch instead of arriving all at once.
   const chiM=std(0xc6d6d0),chiFM=basic(0xeaf4ef,{transparent:true,opacity:.8}),flakeGeo=new THREE.CircleGeometry(.24,5);
   for(let d=34,lastK=-999,n=0;d<LEN-34&&n<9;d+=4){
-    if(d-lastK<44)continue;
+    if(d-lastK<38)continue;
     const a=d;let b=0,ok=false;
-    for(const len of[30,20]){b=a+len;ok=true;
+    for(const len of[40,26,18]){b=a+len;ok=true;
       for(let z=a-2;z<=b+2;z+=2)if(chAt(z,2)||SCS.some(x=>z>x.a-6&&z<x.b+6)){ok=false;break;}
       if(ok)break;}
     if(!ok)continue;
