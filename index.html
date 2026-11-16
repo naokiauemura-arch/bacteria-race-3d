@@ -200,8 +200,8 @@ if(typeof THREE==='undefined'){
 // v: mean speed (µm/s) in no-MC open / 0.4% MC open / 1.25-µm channel, from the movie.
 // s: susceptibility to [β-lactam, glycopeptide, polymyxin, aminoglycoside, macrolide]; 2 = works well, 1 = partly, 0 = resistant (game simplification).
 const SPECIES=[
- {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapIn:1.12,
-  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。マクロライドとアミノグリコシドが弱点。'},
+ {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapIn:1.12,noGlu:true,
+  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。ただしグルコキナーゼを欠くため、グルコースでは加速できない。マクロライドとアミノグリコシドが弱点。'},
  {id:'ci',ab:'Ci',name:'C. insecticola',jp:'カバレロニア・インセクティコラ',gram:'−',color:0x3fae5a,v:[22.4,18.3,2.6],s:[0,0,0,2,0],shape:'tuft',nf:3,len:2.4,rad:.4,wrap:true,
   desc:'極べん毛の束で泳ぐ桿菌。べん毛を菌体に巻きつけるラッピングモードで狭小ルートを押し通れる。弱点はアミノグリコシドだけ。'},
  {id:'ba',ab:'Ba',name:'B. anthina',jp:'バークホルデリア・アンティナ',gram:'−',color:0x9aa3aa,v:[12.5,8.9,1.0],s:[0,0,0,0,0],shape:'tuft',nf:3,len:2.6,rad:.42,
@@ -260,7 +260,7 @@ const MODES=[
 let lang='ja';
 try{const s=localStorage.getItem('br3d-lang');if(s==='en'||s==='ja')lang=s;else if(typeof navigator!=='undefined'&&!/^ja/i.test(navigator.language||'ja'))lang='en';}catch(e){}
 const EN_SP={
- cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes. Weak to macrolides and aminoglycosides.'],
+ cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes. It has no glucokinase, so glucose gives it no boost. Weak to macrolides and aminoglycosides.'],
  ci:['Caballeronia insecticola','Rod with a polar bundle of flagella. Wrapping them around the body lets it force its way through narrow routes. Its only weakness is aminoglycosides.'],
  ba:['Burkholderia anthina','Slow everywhere, but as a cepacia-complex member it shrugs off all five antibiotic classes in this game. Take the non-viscous roads and play it steady.'],
  se:['Salmonella enterica','Steady all-rounder driven by peritrichous flagella that emerge along the cell sides and bundle behind it. Viscous shortcuts pay off, narrow routes do not. β-lactams, polymyxins and aminoglycosides work well against it.'],
@@ -293,9 +293,9 @@ ja:{
  title:'バクテリア・レース 3D',
  lead:'8種の細菌が1本のコースで混走するアイテムバトルです。5つのコースには粘性なし・粘性あり・狭小の区画が入り組んでいて、どの道を選ぶかは菌しだい。グルコースで加速し、ファージと抗生物質でライバルを止めましょう。',
  hSp:'細菌を選ぶ　<span>バー = 粘性なし（開）・粘性あり（粘）・狭小（狭）での実測速度 µm/s</span>',hCo:'コース',hMo:'速度',go:'スタート',
- keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。<i>C. jejuni</i> はグルコースを代謝できないので、グルコースでは加速しません。',
  src:'速度: 論文 <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a>（bioRxiv）の動画 Movie S3 に表示された各種・各環境の平均値（粘性ありの <i>B. subtilis</i> は表示値 57.4 を使用）。コースの形、近道の倍率、ラッピングモードによる加速、バトル補正、追い上げ補正はゲーム上の設定で、論文の速度値には含まれません。抗生物質の相性は、グラム染色性・外膜の有無・属レベルで知られる自然耐性の傾向をゲーム用に3段階へ単純化したもので、論文のデータではありません。株によって異なり、医療上の判断には使えません。',
- barL:['開','粘','狭'],gram:g=>'グラム'+g,wrapOK:'ラッピング可',
+ barL:['開','粘','狭'],gram:g=>'グラム'+g,wrapOK:'ラッピング可',noGlu:'グルコース不可',gluNo:'グルコースは使えない — グルコキナーゼを欠く',
  legend:'抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b><br>',paren:(a,b)=>a+'（'+b+'）',sep:'　',
  gramP:g=>'（グラム'+(g==='＋'?'陽性':'陰性')+'）― ',
  of8:' / 8 位',slow:'0.4倍速スローモーション',itemLab:'アイテム',useHint:'Space で使用',tw:'巻く',tu:'使う',quit:'やめる',again:'もう一度',back:'細菌・コースを変える',
@@ -317,9 +317,9 @@ en:{
  title:'Bacteria Race 3D',
  lead:'An item-battle race where eight bacterial species share one track. Each of the five courses weaves together non-viscous, viscous and narrow sections, and the best route depends on your species. Boost with glucose; stop rivals with phages and antibiotics.',
  hSp:'Choose a bacterium <span>bars = measured speed (µm/s): open · viscous · narrow</span>',hCo:'Course',hMo:'Speed',go:'Start',
- keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind.',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind. <i>C. jejuni</i> cannot metabolise glucose, so glucose gives it no boost.',
  src:'Speeds: mean values for each species and environment shown in Movie S3 of <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a> (bioRxiv); for <i>B. subtilis</i> in the viscous condition the on-screen value 57.4 is used. Course layouts, shortcut gains, the wrapping boost, battle balance and catch-up are game settings, not part of the paper’s speed data. Antibiotic match-ups are a three-level simplification of Gram type, outer membrane and genus-level intrinsic resistance made for this game; they are not data from the paper, vary by strain, and must not be used for medical decisions.',
- barL:['open','visc','narrow'],gram:g=>'Gram'+(g==='＋'?'+':'−'),wrapOK:'can wrap',
+ barL:['open','visc','narrow'],gram:g=>'Gram'+(g==='＋'?'+':'−'),wrapOK:'can wrap',noGlu:'no glucose',gluNo:'Cannot use glucose — it has no glucokinase',
  legend:'Antibiotic match-up　<b class="e2">◎ works well</b> · <b class="e1">○ partly</b> · <b class="e0">× resistant</b><br>',paren:(a,b)=>a+' ('+b+')',sep:' · ',
  gramP:g=>' (Gram-'+(g==='＋'?'positive':'negative')+') — ',
  of8:' / 8',slow:'0.4× slow motion',itemLab:'ITEM',useHint:'Space to use',tw:'Wrap',tu:'Use',quit:'Quit',again:'Race again',back:'Change bacterium / course',
@@ -645,7 +645,7 @@ function renderMenu(){
   for(const[id,k]of[['t_title','title'],['t_lead','lead'],['t_hsp','hSp'],['t_hco','hCo'],['t_hmo','hMo'],['go','go'],['t_keys','keys'],['t_src','src'],
     ['t_of','of8'],['t_slow','slow'],['t_il','itemLab'],['tw','tw'],['tu','tu'],['quit','quit'],['again','again'],['back','back']])$(id).innerHTML=t(k);
   document.querySelectorAll('#lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
-  $('species').innerHTML=SPECIES.map((s,i)=>`<button class="sp" data-i="${i}" style="--c:${hex(s.color)}"><div class="n"><span>${s.name}</span><em>${t('gram',s.gram)}</em></div><div class="j">${spLocal(s)}${s.wrap?' · <b style="color:var(--ink);font-weight:500">'+t('wrapOK')+'</b>':''}</div>${
+  $('species').innerHTML=SPECIES.map((s,i)=>`<button class="sp" data-i="${i}" style="--c:${hex(s.color)}"><div class="n"><span>${s.name}</span><em>${t('gram',s.gram)}</em></div><div class="j">${spLocal(s)}${s.wrap?' · <b style="color:var(--ink);font-weight:500">'+t('wrapOK')+'</b>':''}${s.noGlu?' · <b style="color:var(--dim);font-weight:500">'+t('noGlu')+'</b>':''}</div>${
     s.v.map((v,e)=>`<div class="bar"><span style="font-family:inherit;font-size:9px;color:${ENVC[e]}">${t('barL')[e]}</span><div><i style="width:${v/VMAX*100}%"></i></div><b class="num">${v.toFixed(1)}</b></div>`).join('')
     }<div class="chips">${s.s.map((e,k)=>`<span class="chip e${e}" title="${abxT(k,'cls')}: ${t('eff')[e]}">${ABX[k].k}${'×○◎'[e]}</span>`).join('')}</div></button>`).join('');
   $('legend').innerHTML=t('legend')+ABX.map((a,k)=>`<b>${a.k}</b> ${t('paren',abxT(k,'cls'),abxT(k,'drug'))}`).join(t('sep'));
@@ -677,7 +677,7 @@ document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);});
 
 /* ================= game state ================= */
-let state='menu',clock=0,count=0,shake=0,firstFin=null,endAt=null,lastEnv=-1,msgT=0,curFog=.012,camX=0,lookX=0;
+let state='menu',gluMsg=false,clock=0,count=0,shake=0,firstFin=null,endAt=null,lastEnv=-1,msgT=0,curFog=.012,camX=0,lookX=0;
 let phages=[],waves=[];
 const me=()=>racers[meIdx];
 
@@ -696,7 +696,7 @@ function startRace(){
       boostT:0,slowT:0,slowM:1,spinT:0,shieldT:0,immT:0,hits:0,taken:0,fxT:0,aiT:0,wrapOn:false,wrapK:0});
     r.tl=r.lat;r.fx.visible=false;r.m.shield.visible=false;r.m.body.emissive.copy(r.m.base);
     r.m.g.rotation.set(0,0,0);});
-  clock=0;count=3.2;shake=0;firstFin=null;endAt=null;lastEnv=-1;msgT=0;usePressed=false;camX=lookX=rx(me());
+  clock=0;count=3.2;shake=0;gluMsg=false;firstFin=null;endAt=null;lastEnv=-1;msgT=0;usePressed=false;camX=lookX=rx(me());
   scene.background.set(TH.bg);scene.fog.color.set(TH.bg);curFog=TH.fog;
   $('msg').classList.remove('on');$('center').textContent='';
   state='count';
@@ -746,8 +746,8 @@ function showItem(){
 }
 function rollItem(r){
   const o=order().filter(x=>x.finish==null),f=o.length>1?o.indexOf(r)/(o.length-1):0;
-  const w=[['glu',4-2*f],['bio',2.5-1.5*f],['phg',.4+5*f]];for(let k=0;k<5;k++)w.push([k,.65+.65*f]);
-  let t=Math.random()*w.reduce((a,x)=>a+x[1],0);for(const[k,x]of w){if((t-=x)<=0)return k;}return 'glu';
+  const w=[['glu',r.sp.noGlu?0:4-2*f],['bio',2.5-1.5*f+(r.sp.noGlu?1.5:0)],['phg',.4+5*f]];for(let k=0;k<5;k++)w.push([k,.65+.65*f]);
+  let t=Math.random()*w.reduce((a,x)=>a+x[1],0);for(const[k,x]of w){if((t-=x)<=0)return k;}return r.sp.noGlu?'bio':'glu';
 }
 function giveItem(r){
   r.item=rollItem(r);r.itemT=1+Math.random()*2.5;r.tries=0;
@@ -771,7 +771,7 @@ const inRange=(u,t)=>t!==u&&t.finish==null&&t.dist>u.dist-15&&t.dist<u.dist+60;
 function useItem(r){
   const it=r.item,p=me();if(it==null)return;
   r.item=null;
-  if(it==='glu'){r.boostT=2.2;fx(r,t('gluFx'),'#fff07a');}
+  if(it==='glu'){if(r.sp.noGlu){fx(r,t('noGlu'),'#8fa5b0');if(r===p)say(t('gluNo'),2);}else{r.boostT=2.2;fx(r,t('gluFx'),'#fff07a');}}
   else if(it==='bio'){r.shieldT=7;}
   else if(it==='phg'){
     const tg=racers.filter(o=>o!==r&&o.finish==null&&o.dist>r.dist).sort((a,b)=>a.dist-b.dist)[0];
@@ -816,7 +816,7 @@ function aiSteer(r,dt){
     else{
       const row=r.item==null&&boxRows.find(b=>b.d>r.dist+2&&b.d<r.dist+45);
       if(row)r.tl=row.lats[Math.floor(Math.random()*row.lats.length)];
-      else{const g=pick.find(q=>!q.br&&q.type==='glu'&&q.cd<=0&&q.d>r.dist+3&&q.d<r.dist+22&&Math.abs(q.lat-r.lat)<3);
+      else{const g=!r.sp.noGlu&&pick.find(q=>!q.br&&q.type==='glu'&&q.cd<=0&&q.d>r.dist+3&&q.d<r.dist+22&&Math.abs(q.lat-r.lat)<3);
         r.tl=g&&Math.random()<.7?g.lat:clamp(r.lat+(Math.random()-.5)*5,-EDGE,EDGE);}
     }
   }
@@ -901,7 +901,7 @@ function stepRace(dt){
     if(q.cd>0){if((q.cd-=dt)<=0)q.m.visible=true;continue;}
     for(const r of racers){
       if(r.finish!=null||r.fallT>0||r.br!==q.br||Math.abs(r.dist-q.d)>1.4||Math.abs((r.br?r.blat:r.lat)-q.lat)>1)continue;
-      if(q.type==='glu'){r.boostT=Math.max(r.boostT,.9);q.cd=5;q.m.visible=false;break;}
+      if(q.type==='glu'){if(r.sp.noGlu){if(r===me()&&!gluMsg){gluMsg=true;fx(r,t('noGlu'),'#8fa5b0');say(t('gluNo'),2);}continue;}r.boostT=Math.max(r.boostT,.9);q.cd=5;q.m.visible=false;break;}
       if(r.item==null){giveItem(r);q.cd=3;q.m.visible=false;break;}
     }
   }
