@@ -945,7 +945,7 @@ function stepRace(dt){
     const chi=!r.br&&!done&&chitinAt(r.dist,r.lat),dig=r.sp.chitin;
     if(dig||r.sp.chiStick){
       r.chiT=clamp(r.chiT+(chi?dt/(dig?.55:.5):-dt/(dig?1.4:1.1)),0,1);
-      mult*=lerp(1,dig?2.1:.6,r.chiT);
+      mult*=lerp(1,dig?1.9:.6,r.chiT);
       if(chi&&!r.chiOn){r.chiOn=true;fx(r,t(dig?'chiFx':'chiStickFx'),dig?'#eaf4ef':'#9fd0ff');
         if(r===p&&!chiMsg){chiMsg=true;say(t(dig?'chiSay':'chiStickSay'),2.4);}}
       else if(!chi)r.chiOn=false;
