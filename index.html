@@ -218,11 +218,11 @@ const SPECIES=[
   desc:'菌体の側面から生える20〜30本の周べん毛を持ち、粘性の中で全体最速。粘性ゾーンと近道が稼ぎどころ。唯一のグラム陽性菌で、バンコマイシンを含むほとんどの薬が直撃する。'}
 ];
 const ABX=[
- {k:'β',cls:'βラクタム系',drug:'アンピシリン',mech:'細胞壁（ペプチドグリカン）合成を阻害',col:0xff8a5c},
- {k:'V',cls:'グリコペプチド系',drug:'バンコマイシン',mech:'細胞壁合成を阻害。大きすぎて外膜を通れない',col:0xd98cff},
- {k:'P',cls:'ポリミキシン系',drug:'コリスチン',mech:'外膜のLPSに結合して膜を壊す',col:0x6fd0ff},
- {k:'A',cls:'アミノグリコシド系',drug:'ゲンタマイシン',mech:'リボソーム30Sに結合しタンパク質合成を乱す',col:0xffe066},
- {k:'M',cls:'マクロライド系',drug:'エリスロマイシン',mech:'リボソーム50Sに結合しタンパク質合成を止める',col:0x8dffb0}
+ {k:'β',cls:'βラクタム系',drug:'アンピシリン',mech:'細胞壁合成を阻害。できあがったべん毛は回り続けるので減速は小さい',mot:.78,col:0xff8a5c},
+ {k:'V',cls:'グリコペプチド系',drug:'バンコマイシン',mech:'細胞壁合成を阻害。外膜を通れず、減速も小さい',mot:.78,col:0xd98cff},
+ {k:'P',cls:'ポリミキシン系',drug:'コリスチン',mech:'外膜のLPSに結合して膜を壊し、べん毛モーターを回す駆動力を失わせる。減速がいちばん大きい',mot:.45,col:0x6fd0ff},
+ {k:'A',cls:'アミノグリコシド系',drug:'ゲンタマイシン',mech:'リボソーム30Sに結合しタンパク質合成を乱す。減速は中程度',mot:.68,col:0xffe066},
+ {k:'M',cls:'マクロライド系',drug:'エリスロマイシン',mech:'リボソーム50Sに結合しタンパク質合成を止める。減速は小さい',mot:.8,col:0x8dffb0}
 ];
 const EFF=['耐性','やや効く','よく効く'];
 const ENVN=['粘性なし','粘性あり','狭小'];
@@ -270,11 +270,11 @@ const EN_SP={
  bs:['Bacillus subtilis','Carries 20–30 peritrichous flagella along its sides and is the fastest of all in viscous sections, so viscous zones and shortcuts are where it scores. The only Gram-positive here: almost every drug, vancomycin included, hits it directly.']
 };
 const EN_ABX=[
- {cls:'β-lactam',drug:'ampicillin',mech:'Blocks cell-wall (peptidoglycan) synthesis'},
- {cls:'Glycopeptide',drug:'vancomycin',mech:'Blocks cell-wall synthesis; too large to cross an outer membrane'},
- {cls:'Polymyxin',drug:'colistin',mech:'Binds outer-membrane LPS and disrupts the membrane'},
- {cls:'Aminoglycoside',drug:'gentamicin',mech:'Binds the 30S ribosome and corrupts protein synthesis'},
- {cls:'Macrolide',drug:'erythromycin',mech:'Binds the 50S ribosome and stalls protein synthesis'}
+ {cls:'β-lactam',drug:'ampicillin',mech:'Blocks cell-wall (peptidoglycan) synthesis. The flagella already built keep turning, so it slows you only a little'},
+ {cls:'Glycopeptide',drug:'vancomycin',mech:'Blocks cell-wall synthesis; too large to cross an outer membrane. Slows you only a little'},
+ {cls:'Polymyxin',drug:'colistin',mech:'Binds outer-membrane LPS and disrupts the membrane, collapsing the motive force that drives the flagellar motor — the sharpest slowdown'},
+ {cls:'Aminoglycoside',drug:'gentamicin',mech:'Binds the 30S ribosome and corrupts protein synthesis; a moderate slowdown'},
+ {cls:'Macrolide',drug:'erythromycin',mech:'Binds the 50S ribosome and stalls protein synthesis; the gentlest slowdown'}
 ];
 const EN_CO={
  chip:{name:'Microfluidic Circuit',sub:'A glass chip. Learn the forks here'},
@@ -296,7 +296,7 @@ ja:{
  keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。コース後半は、1位だけを狙う捕食細菌 <b>Bdellovibrio</b> が出ます。バイオフィルム以外では防げません。<i>C. jejuni</i> は道のグルコースを代謝できず、加速アイテムもグルコースではなくピルビン酸（やや強力）になります。白いキチンの区画で加速できるのは <i>F. johnsoniae</i> だけで、ビブリオ2種は吸着して減速します。',
  src:'速度: 論文 <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a>（bioRxiv）の動画 Movie S3 に表示された各種・各環境の平均値（粘性ありの <i>B. subtilis</i> は表示値 57.4 を使用）。コースの形、近道の倍率、ラッピングモードによる加速、バトル補正、追い上げ補正はゲーム上の設定で、論文の速度値には含まれません。Bdellovibrio の遊泳速度 90.9 µm/s とべん毛長 3.48 µm は <a href="https://doi.org/10.1111/1462-2920.70243">Sugiyama et al., Environ Microbiol 28 (2026)</a> の実測値です。<i>F. johnsoniae</i> の SprB の軌道（左巻き閉ループ・長軸から約20°）は <a href="https://www.pnas.org/doi/10.1073/pnas.1219753110">Nakane et al., PNAS 110, 11145 (2013)</a> に基づきます。抗生物質の相性は、グラム染色性・外膜の有無・属レベルで知られる自然耐性の傾向をゲーム用に3段階へ単純化したもので、論文のデータではありません。株によって異なり、医療上の判断には使えません。',
  barL:['開','粘','狭'],gram:g=>'グラム'+g,wrapOK:'ラッピング可',noGlu:'道のグルコース不可',gluNo:'グルコースは使えない — グルコキナーゼを欠く（アイテムはピルビン酸になる）',chiOK:'キチン分解',chiBad:'キチンに吸着',chiStickFx:'キチンに吸着',chiStickSay:'キチンに吸着して減速 — GlcNAc結合タンパク質が表面をつかむ',chiSign:'キチン',chiFx:'キチン分解',chiSay:'キチンを削りながら加速 — 触れている間だけ',chiNo:'キチンは分解できない — F. johnsoniae だけが使える',
- legend:'抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b><br>',paren:(a,b)=>a+'（'+b+'）',sep:'　',
+ legend:'抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b>　減速の大きさは系統で違います（膜を壊すポリミキシンが最大。できあがったべん毛は回り続けるので、リボソームや細胞壁を狙う系統は小さめ）<br>',paren:(a,b)=>a+'（'+b+'）',sep:'　',
  gramP:g=>'（グラム'+(g==='＋'?'陽性':'陰性')+'）― ',
  of8:' / 8 位',slow:'0.4倍速スローモーション',itemLab:'アイテム',useHint:'Space で使用',tw:'巻く',tu:'使う',quit:'やめる',again:'もう一度',back:'細菌・コースを変える',
  env:['粘性なし','粘性あり','狭小'],eff:['耐性','やや効く','よく効く'],
@@ -320,7 +320,7 @@ en:{
  keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind. In the second half the predatory bacterium <b>Bdellovibrio</b> appears, which homes on the leader and only a biofilm can stop. <i>C. jejuni</i> cannot metabolise the glucose on the track, and its boost item is pyruvate instead, which is a little stronger. Only <i>F. johnsoniae</i> speeds up on the pale chitin patches; the two <i>Vibrio</i> stick to them and slow down.',
  src:'Speeds: mean values for each species and environment shown in Movie S3 of <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a> (bioRxiv); for <i>B. subtilis</i> in the viscous condition the on-screen value 57.4 is used. Course layouts, shortcut gains, the wrapping boost, battle balance and catch-up are game settings, not part of the paper’s speed data. The 90.9 µm/s swimming speed and 3.48 µm flagellum of the Bdellovibrio are measured values from <a href="https://doi.org/10.1111/1462-2920.70243">Sugiyama et al., Environ Microbiol 28 (2026)</a>. The SprB track of <i>F. johnsoniae</i> (a closed left-handed helical loop at about 20° to the long axis) follows <a href="https://www.pnas.org/doi/10.1073/pnas.1219753110">Nakane et al., PNAS 110, 11145 (2013)</a>. Antibiotic match-ups are a three-level simplification of Gram type, outer membrane and genus-level intrinsic resistance made for this game; they are not data from the paper, vary by strain, and must not be used for medical decisions.',
  barL:['open','visc','narrow'],gram:g=>'Gram'+(g==='＋'?'+':'−'),wrapOK:'can wrap',noGlu:'no glucose',gluNo:'Cannot use glucose — it has no glucokinase (its item is pyruvate instead)',chiOK:'digests chitin',chiBad:'sticks to chitin',chiStickFx:'stuck to chitin',chiStickSay:'Stuck to the chitin — its GlcNAc-binding proteins grip the surface',chiSign:'chitin',chiFx:'digesting chitin',chiSay:'Digesting chitin — faster while in contact',chiNo:'Cannot digest chitin — only F. johnsoniae can',
- legend:'Antibiotic match-up　<b class="e2">◎ works well</b> · <b class="e1">○ partly</b> · <b class="e0">× resistant</b><br>',paren:(a,b)=>a+' ('+b+')',sep:' · ',
+ legend:'Antibiotic match-up　<b class="e2">◎ works well</b> · <b class="e1">○ partly</b> · <b class="e0">× resistant</b>　How much it slows you differs by class: polymyxin, which wrecks the membrane, slows most; the flagella already built keep turning, so ribosome- and cell-wall-targeting classes slow less<br>',paren:(a,b)=>a+' ('+b+')',sep:' · ',
  gramP:g=>' (Gram-'+(g==='＋'?'positive':'negative')+') — ',
  of8:' / 8',slow:'0.4× slow motion',itemLab:'ITEM',useHint:'Space to use',tw:'Wrap',tu:'Use',quit:'Quit',again:'Race again',back:'Change bacterium / course',
  env:['Open','Viscous','Narrow'],eff:['resistant','partly works','works well'],
@@ -842,7 +842,7 @@ function strike(tg,src,kind,k){ // returns true if it had an effect
     else if(src===p)say(t('phHit',nm(tg)));return true;}
   const a=ABX[k],e=tg.sp.s[k];
   if(e===0){fx(tg,t('resFx',a.k),'#8fa5b0');if(tg===p)say(t('resMe',nm(src),abxT(k,'cls')),1.8);return false;}
-  tg.slowT=e===2?2.6:2;tg.slowM=e===2?.45:.72;tg.immT=tg.slowT+2;tg.slowCol=a.col;tg.taken++;src.hits++;
+  tg.slowT=e===2?2.6:2;tg.slowM=e===2?a.mot:(1+a.mot)/2;tg.immT=tg.slowT+2;tg.slowCol=a.col;tg.taken++;src.hits++;
   fx(tg,a.k+' '+t('eff')[e],hex(a.col));
   if(tg===p){shake=e===2?.5:.25;say(t('abxMe',nm(src),abxT(k,'cls'),t('eff')[e]),1.8);}
   return true;
