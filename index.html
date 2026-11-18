@@ -261,7 +261,7 @@ const COURSES=[
 ];
 const MODES=[
  {name:'バトル補正',sub:'速度 = 32 + 0.2 × 実測、後方ほど少し追い上げ。順位関係は保ったまま混戦に'},
- {name:'実測そのまま',sub:'速度差がそのまま出る。遅い菌は修行'}
+ {name:'実測そのまま',sub:'アイテムもキチンも補正もなし。論文の実測値だけで走る'}
 ];
 /* ================= language ================= */
 let lang='ja';
@@ -292,7 +292,7 @@ const EN_CO={
 };
 const EN_MO=[
  {name:'Battle balance',sub:'speed = 32 + 0.2 × measured, plus a small catch-up boost. Rankings kept, pack stays close'},
- {name:'Measured speeds',sub:'Raw speed differences. Slow species are hard mode'}
+ {name:'Measured speeds',sub:'No items, no chitin, no balancing — the paper’s values alone'}
 ];
 const ord=n=>n+(['th','st','nd','rd'][n%10>3||Math.floor(n/10)===1?0:n%10]||'th');
 const TX={
@@ -661,6 +661,7 @@ function buildCourse(c){
   for(const o of OPEN){const sg=label(t('noRail'),'#ffc530',1.3,false);sg.position.set(cx(o.a),4.4,-o.a);G.add(sg);}
   // Chitin patches. F. johnsoniae digests insoluble chitin by direct contact, so the
   // boost builds while the cell stays on the patch instead of arriving all at once.
+  if(battle){
   const chiM=std(0xc6d6d0),chiFM=basic(0xeaf4ef,{transparent:true,opacity:.8}),flakeGeo=new THREE.CircleGeometry(.24,5);
   for(let d=34,lastK=-999,n=0;d<LEN-34&&n<5;d+=4){
     if(d-lastK<78)continue;
@@ -681,6 +682,7 @@ function buildCourse(c){
       fk.rotation.set(-Math.PI/2+(R()-.5)*.25,0,R()*6.28);fk.scale.setScalar(.55+R()*.85);G.add(fk);}
     const kg=label(t('chiSign'),'#eaf4ef',1.7,false);kg.position.set(cx(a+5)+(l0+l1)/2,3.1,-(a+5));G.add(kg);
   }
+  }
   buildDeco(G,R);
 
   // pickups
@@ -693,6 +695,7 @@ function buildCourse(c){
     const c=chAt(d,6);if(c){if(l>=c.l0&&l<=c.l1)return nearest(c.cs,l);if(l>c.l0-1.2&&l<c.l0)return c.l0-1.4>=-EDGE?c.l0-1.4:null;if(l<c.l1+1.2&&l>c.l1)return c.l1+1.4<=EDGE?c.l1+1.4:null;}
     return l;
   };
+  if(battle){
   for(let d=40;d<LEN-18;d+=58){
     const lats=[...new Set([-4.5,-1.5,1.5,4.5].map(l=>place(d,l)).filter(l=>l!=null))];
     if(lats.length){boxRows.push({d,lats});for(const l of lats)addPick('box',d,l);}
@@ -702,6 +705,7 @@ function buildCourse(c){
     const l=place(d,(R()-.5)*2*(EDGE-.8));if(l!=null)addPick('glu',d,l);
   }
   for(const s of SCS)addPick('glu',(s.a+s.b)/2,0,s);
+  }
   // finish
   const cv=document.createElement('canvas');cv.width=256;cv.height=16;const c2=cv.getContext('2d');
   for(let i=0;i<32;i++)for(let j=0;j<2;j++){c2.fillStyle=(i+j)%2?'#f4f4f4':'#111';c2.fillRect(i*8,j*8,8,8);}
@@ -781,9 +785,12 @@ function startRace(){
   $('who').textContent=me().sp.name;$('who').style.color=hex(me().sp.color);
   const span=(a,b,top,col,h)=>`<i style="left:${a/LEN*100}%;width:${(b-a)/LEN*100}%;top:${top}px;height:${h||4}px;background:${col}"></i>`;
   $('psecs').innerHTML=F.map(f=>f.t==='v'?span(f.a,f.b,1,ENVC[1]):f.t==='c'?span(f.a,f.b,5,ENVC[2]):f.t==='s'?span(f.a,f.b,9,'#ffd76a'):f.t==='k'?span(f.a,f.b,16,'#e4f0ec',3):span(f.a,f.b,13,'#ff5a3c',2)).join('');
-  $('plbls').innerHTML=[ENVC[1],ENVC[2],'#ffd76a','#ff5a3c','#e4f0ec'].map((c,i)=>`<span style="color:${c}">${t('lg')[i]}</span>`).join('');
+  const lgK=['v','c','s','ho','k'];
+  $('plbls').innerHTML=[ENVC[1],ENVC[2],'#ffd76a','#ff5a3c','#e4f0ec'].map((c,i)=>
+    (i===3?F.some(f=>f.t==='h'||f.t==='o'):F.some(f=>f.t===lgK[i]))?`<span style="color:${c}">${t('lg')[i]}</span>`:'').join('');
   $('pdots').innerHTML=racers.map(r=>`<div class="dot${r.i===meIdx?' me':''}" id="d${r.i}" style="background:${hex(r.sp.color)}"></div>`).join('');
   $('ih').textContent=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches?'':t('useHint');
+  $('item').classList.toggle('hidden',!battle);
   $('wrap').classList.toggle('hidden',!me().m.wrap);$('tw').classList.toggle('hidden',!me().m.wrap);
   $('ek').textContent=coT(course,'name');
   setEnvBanner(0,false);showItem();
@@ -979,12 +986,12 @@ function stepRace(dt){
     for(const k of['boostT','slowT','spinT','shieldT','immT'])if(r[k]>0){r[k]-=dt;if(k==='shieldT'&&r[k]<=0&&r===p)say(t('bioGone'),1.4);}
     const e=renv(r);
     let mult=(r.boostT>0?r.boostM:1)*(r.slowT>0?r.slowM:1)*(r.spinT>0?.12:1);
-    if(r!==p)mult*=DF.v*(1+.04*Math.sin(clock/TS*r.fq+r.ph));
+    if(r!==p&&battle)mult*=DF.v*(1+.04*Math.sin(clock/TS*r.fq+r.ph));
     if(r.m.wrap){
       if(r!==p)r.wrapOn=e===2||(r.sp.wrapOut||WRAP_OUT)>=1;
       else if(wrapPressed&&!done){r.wrapOn=!r.wrapOn;fx(r,t(r.wrapOn?'wrapOn':'wrapOff'),'#ffffff');}
       r.wrapK=clamp(r.wrapK+(r.wrapOn?1:-1)*2.5*dt,0,1);
-      mult*=lerp(1,e===2?(r.sp.wrapIn||WRAP_IN):(r.sp.wrapOut||WRAP_OUT),r.wrapK);
+      if(battle)mult*=lerp(1,e===2?(r.sp.wrapIn||WRAP_IN):(r.sp.wrapOut||WRAP_OUT),r.wrapK);
     }
     const chi=!r.br&&!done&&chitinAt(r.dist,r.lat),dig=r.sp.chitin;
     if(dig||r.sp.chiStick){
