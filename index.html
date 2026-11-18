@@ -104,6 +104,10 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
 #item .cmp span.e0{opacity:.4;text-decoration:line-through}
 #item .cmp span.e2{background:rgba(255,255,255,.12)}
 #item.empty .nm{color:var(--dim);font-weight:400;font-size:14px}
+#shield{left:20px;bottom:210px;font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid rgba(157,255,217,.5);background:rgba(10,40,32,.65);color:#9dffd9}
+#shield b{margin-right:8px}
+#shield.low{animation:blink .5s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.35}}
 #wrap{left:20px;bottom:176px;font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(4,10,18,.6);color:var(--dim)}
 #wrap b{color:var(--ink);margin-right:8px}
 #wrap.on{border-color:#fff;background:rgba(255,255,255,.16)}
@@ -171,6 +175,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <div id="stat"><div class="t num"><span id="tm">0.00</span><small> s</small></div><div class="v num"><span id="sv">0.0</span> <small>µm/s</small></div><div class="slow" id="t_slow"></div></div>
   <div id="center"></div>
   <div id="msg"></div>
+  <div id="shield" class="hidden"><b id="sk"></b><span id="sh"></span></div>
   <div id="wrap" class="hidden"><b id="wk"></b><span id="wh"></span></div>
   <div id="item" class="empty"><div class="lab"><span id="t_il"></span><span id="ih"></span></div><div class="nm" id="in"></div><div class="sb" id="is"></div><div class="cmp" id="ic"></div></div>
   <div id="prog"><div class="secs" id="psecs"></div><div class="lbls" id="plbls"></div><div id="pdots"></div></div>
@@ -200,8 +205,8 @@ if(typeof THREE==='undefined'){
 // v: mean speed (µm/s) in no-MC open / 0.4% MC open / 1.25-µm channel, from the movie.
 // s: susceptibility to [β-lactam, glycopeptide, polymyxin, aminoglycoside, macrolide]; 2 = works well, 1 = partly, 0 = resistant (game simplification).
 const SPECIES=[
- {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapIn:1.12,noGlu:true,
-  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。ただしグルコキナーゼを欠くため、道に落ちているグルコースでは加速できない。代わりに加速アイテムがピルビン酸になり、グルコースより強い。マクロライドとアミノグリコシドが弱点。'},
+ {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapOut:1,noGlu:true,
+  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。前極のべん毛は通常の遊泳でも巻いているので、ラッピングを入れたままでも広い場所で損をしない。ただしグルコキナーゼを欠くため、道に落ちているグルコースでは加速できない。代わりに加速アイテムがピルビン酸になり、グルコースより強い。マクロライドとアミノグリコシドが弱点。'},
  {id:'ci',ab:'Ci',name:'C. insecticola',jp:'カバレロニア・インセクティコラ',gram:'−',color:0x3fae5a,v:[22.4,18.3,2.6],s:[0,0,0,2,0],shape:'tuft',nf:3,len:2.4,rad:.4,wrap:true,
   desc:'極べん毛の束で泳ぐ桿菌。べん毛を菌体に巻きつけるラッピングモードで狭小ルートを押し通れる。弱点はアミノグリコシドだけ。'},
  {id:'ba',ab:'Ba',name:'B. anthina',jp:'バークホルデリア・アンシナ',gram:'−',color:0x9aa3aa,v:[12.5,8.9,1.0],s:[0,0,0,0,0],shape:'tuft',nf:3,len:2.6,rad:.42,
@@ -260,7 +265,7 @@ const MODES=[
 let lang='ja';
 try{const s=localStorage.getItem('br3d-lang');if(s==='en'||s==='ja')lang=s;else if(typeof navigator!=='undefined'&&!/^ja/i.test(navigator.language||'ja'))lang='en';}catch(e){}
 const EN_SP={
- cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes. It has no glucokinase, so the glucose on the track gives it no boost; its boost item is pyruvate instead, which is stronger. Weak to macrolides and aminoglycosides.'],
+ cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes; because its leading flagellum wraps during normal swimming anyway, leaving wrapping on costs it nothing in open water. It has no glucokinase, so the glucose on the track gives it no boost; its boost item is pyruvate instead, which is stronger. Weak to macrolides and aminoglycosides.'],
  ci:['Caballeronia insecticola','Rod with a polar bundle of flagella. Wrapping them around the body lets it force its way through narrow routes. Its only weakness is aminoglycosides.'],
  ba:['Burkholderia anthina','Slow everywhere, but as a cepacia-complex member it shrugs off all five antibiotic classes in this game. Take the non-viscous roads and play it steady.'],
  se:['Salmonella enterica','Steady all-rounder driven by peritrichous flagella that emerge along the cell sides and bundle behind it. Viscous shortcuts pay off, narrow routes do not. β-lactams, polymyxins and aminoglycosides work well against it.'],
@@ -293,7 +298,7 @@ ja:{
  title:'バクテリア・レース 3D',
  lead:'8種の細菌が1本のコースで混走するアイテムバトルです。5つのコースには粘性なし・粘性あり・狭小の区画が入り組んでいて、どの道を選ぶかは菌しだい。グルコースで加速し、ファージと抗生物質でライバルを止めましょう。',
  hSp:'細菌を選ぶ　<span>バー = 粘性なし（開）・粘性あり（粘）・狭小（狭）での実測速度 µm/s</span>',hCo:'コース',hMo:'速度',go:'スタート',
- keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。コース後半は、1位だけを狙う捕食細菌 <b>Bdellovibrio</b> が出ます。バイオフィルム以外では防げません。<i>C. jejuni</i> は道のグルコースを代謝できず、加速アイテムもグルコースではなくピルビン酸（やや強力）になります。白いキチンの区画で加速できるのは <i>F. johnsoniae</i> だけで、ビブリオ2種は吸着して減速します。',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> 左右移動　<kbd>Space</kbd> アイテムを使う　<kbd>Shift</kbd> ラッピング切替（<i>V. fischeri</i>・<i>C. insecticola</i>・<i>C. jejuni</i>。狭小で ×1.25（<i>C. jejuni</i> は ×1.12）、広い場所で ×0.85）<br>道が左右で「狭小」と「粘性」などに分かれる所は、自分の菌が速い側へ。黄色い看板の<b>近道</b>は粘性だが道のりが短い。穴に落ちる、柵のない縁から出ると場外で、12 µm 手前からやり直し。抗生物質は前方約60 µm・後方約15 µmに届きます。コース後半は、1位だけを狙う捕食細菌 <b>Bdellovibrio</b> が出ます。バイオフィルム以外では防げません。バイオフィルムは5秒で剥がれます。<i>C. jejuni</i> は道のグルコースを代謝できず、加速アイテムもグルコースではなくピルビン酸（やや強力）になります。白いキチンの区画で加速できるのは <i>F. johnsoniae</i> だけで、ビブリオ2種は吸着して減速します。',
  src:'速度: 論文 <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a>（bioRxiv）の動画 Movie S3 に表示された各種・各環境の平均値（粘性ありの <i>B. subtilis</i> は表示値 57.4 を使用）。コースの形、近道の倍率、ラッピングモードによる加速、バトル補正、追い上げ補正はゲーム上の設定で、論文の速度値には含まれません。Bdellovibrio の遊泳速度 90.9 µm/s とべん毛長 3.48 µm は <a href="https://doi.org/10.1111/1462-2920.70243">Sugiyama et al., Environ Microbiol 28 (2026)</a> の実測値です。<i>F. johnsoniae</i> の SprB の軌道（左巻き閉ループ・長軸から約20°）は <a href="https://www.pnas.org/doi/10.1073/pnas.1219753110">Nakane et al., PNAS 110, 11145 (2013)</a> に基づきます。抗生物質の相性は、グラム染色性・外膜の有無・属レベルで知られる自然耐性の傾向をゲーム用に3段階へ単純化したもので、論文のデータではありません。株によって異なり、医療上の判断には使えません。',
  barL:['開','粘','狭'],gram:g=>'グラム'+g,wrapOK:'ラッピング可',noGlu:'道のグルコース不可',gluNo:'グルコースは使えない — グルコキナーゼを欠く（アイテムはピルビン酸になる）',chiOK:'キチン分解',chiBad:'キチンに吸着',chiStickFx:'キチンに吸着',chiStickSay:'キチンに吸着して減速 — GlcNAc結合タンパク質が表面をつかむ',chiSign:'キチン',chiFx:'キチン分解',chiSay:'キチンを削りながら加速 — 触れている間だけ',chiNo:'キチンは分解できない — F. johnsoniae だけが使える',
  legend:'抗生物質の相性　<b class="e2">◎ よく効く</b>・<b class="e1">○ やや効く</b>・<b class="e0">× 耐性</b>　減速の大きさは系統で違います（膜を壊すポリミキシンが最大。できあがったべん毛は回り続けるので、リボソームや細胞壁を狙う系統は小さめ）<br>',paren:(a,b)=>a+'（'+b+'）',sep:'　',
@@ -302,22 +307,22 @@ ja:{
  env:['粘性なし','粘性あり','狭小'],eff:['耐性','やや効く','よく効く'],
  scSign:g=>'近道 粘性あり ×'+g,noRail:'柵なし 場外注意',lg:['■ 粘性','■ 狭小','■ 近道','■ 穴・柵なし','■ キチン'],scEnv:'近道（粘性あり）',
  envInfo:(v,rk)=>`実測 <b>${v} µm/s</b>・8種中 <b>${rk} 位</b>`,inGame:v=>'　ゲーム内 '+v,pathX:g=>'　道のり ×'+g,
- glu:['グルコース','すぐ使えるエネルギー源。2秒ほど急加速'],pyr:['ピルビン酸','糖を使えない C. jejuni の炭素源。グルコースより強く、3秒ほど加速'],bio:['バイオフィルム','菌体外マトリクスで次の攻撃を1回防ぐ'],phg:['ファージ','すぐ前の1菌を追尾して感染・溶菌。薬剤耐性は関係なし'],bde:['Bdellovibrio','1位だけを狙って 90.9 µm/s で泳ぐ捕食細菌。グラム陰性菌のペリプラズムに侵入して bdelloplast に変える。耐性では止まらず、バイオフィルムだけが防げる。グラム陽性の B. subtilis には部分的にしか効かない'],
+ glu:['グルコース','すぐ使えるエネルギー源。2秒ほど急加速'],pyr:['ピルビン酸','糖を使えない C. jejuni の炭素源。グルコースより強く、3秒ほど加速'],bio:['バイオフィルム','菌体外マトリクスで次の攻撃を1回防ぐ。5秒で剥がれるので使いどころを選ぶ'],phg:['ファージ','すぐ前の1菌を追尾して感染・溶菌。薬剤耐性は関係なし'],bde:['Bdellovibrio','1位だけを狙って 90.9 µm/s で泳ぐ捕食細菌。グラム陰性菌のペリプラズムに侵入して bdelloplast に変える。耐性では止まらず、バイオフィルムだけが防げる。グラム陽性の B. subtilis には部分的にしか効かない'],
  none:'なし',noneSub:'回転する箱を取ると手に入る',got:n=>n+' を入手',
- bioFx:'バイオフィルムで防御',bioSay:'バイオフィルムが攻撃を防いだ',phFx:'ファージ感染！',bdeFx:w=>w+' 侵入！',bdeOff:'グラム陽性 — 部分的',bdeFly:(w,n)=>w+' 発射 → '+n,bdeWarn:w=>w+' が接近中！バイオフィルムで防げ',bdeNone:'自分が1位なので標的がいない',bdeMe:(w,n)=>n+' の '+w+' に侵入された！',bdeHit:(w,n)=>n+' に '+w+' 命中',bdeOffSay:(w,n)=>n+' の '+w+'：グラム陽性なので侵入されず、溶菌酵素で減速だけ',bdeOffHit:n=>n+' はグラム陽性 — 侵入できず減速のみ',phMe:n=>n+' のファージに感染！',phHit:n=>n+' にファージ命中',
+ bioFx:'バイオフィルムで防御',bioLab:'バイオフィルム',bioGone:'バイオフィルムが剥がれた',bioSay:'バイオフィルムが攻撃を防いだ',phFx:'ファージ感染！',bdeFx:w=>w+' 侵入！',bdeOff:'グラム陽性 — 部分的',bdeFly:(w,n)=>w+' 発射 → '+n,bdeWarn:w=>w+' が接近中！バイオフィルムで防げ',bdeNone:'自分が1位なので標的がいない',bdeMe:(w,n)=>n+' の '+w+' に侵入された！',bdeHit:(w,n)=>n+' に '+w+' 命中',bdeOffSay:(w,n)=>n+' の '+w+'：グラム陽性なので侵入されず、溶菌酵素で減速だけ',bdeOffHit:n=>n+' はグラム陽性 — 侵入できず減速のみ',phMe:n=>n+' のファージに感染！',phHit:n=>n+' にファージ命中',
  resFx:k=>k+' 耐性',resMe:(n,c)=>n+' の'+c+' → 耐性で無効！',abxMe:(n,c,e)=>n+' の'+c+'：'+e+'…',gluFx:'グルコース！',pyrFx:'ピルビン酸！',
  phNone:'前に誰もいない。ファージは宿主を見つけられず拡散した',abxNone:c=>c+'：射程内に誰もいない',abxZero:(c,n)=>c+'：射程内の '+n+' 菌には効かなかった',abxHit:(c,n)=>c+'：'+n+' 菌に命中',
  fell:'場外！少し手前からやり直し',scIn:g=>'近道へ：粘性ありだが道のり ×'+g,wrapOn:'ラッピング ON',wrapOff:'ラッピング OFF',goal:n=>n+' がゴール！',
  rc:(c,l,m)=>c+'（'+l+' µm・'+m+'）',win:'優勝！',place:r=>r+' 位',time:s=>`タイム ${s} s。`,timeout:d=>`時間切れ。${d} µm 地点まで進みました。`,
  theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
  stats:(h,k,f)=>`命中 ${h}・被弾 ${k}・場外 ${f}`,
- wIn:x=>'狭小で加速中 ×'+x,wOut:x=>'広い場所では減速 ×'+x+'（Shiftで解除）',wOffIn:'Shift でONにすると加速',wOff:'Shift で切替',timeup:n=>'タイムアップまで '+n+' 秒'
+ wIn:x=>'狭小で加速中 ×'+x,wOut:x=>'広い場所では減速 ×'+x+'（Shiftで解除）',wOutFree:'広い場所でも減速なし — 前極のべん毛は通常の遊泳でも巻いている',wOffIn:'Shift でONにすると加速',wOff:'Shift で切替',timeup:n=>'タイムアップまで '+n+' 秒'
 },
 en:{
  title:'Bacteria Race 3D',
  lead:'An item-battle race where eight bacterial species share one track. Each of the five courses weaves together non-viscous, viscous and narrow sections, and the best route depends on your species. Boost with glucose; stop rivals with phages and antibiotics.',
  hSp:'Choose a bacterium <span>bars = measured speed (µm/s): open · viscous · narrow</span>',hCo:'Course',hMo:'Speed',go:'Start',
- keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind. In the second half the predatory bacterium <b>Bdellovibrio</b> appears, which homes on the leader and only a biofilm can stop. <i>C. jejuni</i> cannot metabolise the glucose on the track, and its boost item is pyruvate instead, which is a little stronger. Only <i>F. johnsoniae</i> speeds up on the pale chitin patches; the two <i>Vibrio</i> stick to them and slow down.',
+ keys:'<kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> steer　<kbd>Space</kbd> use item　<kbd>Shift</kbd> toggle wrapping (<i>V. fischeri</i>, <i>C. insecticola</i>, <i>C. jejuni</i>: ×1.25 in narrow sections, ×1.12 for <i>C. jejuni</i>; ×0.85 in the open)<br>Where the road splits into, say, narrow on one side and viscous on the other, take the side your species is faster on. <b>Shortcuts</b> under the yellow signs are viscous but shorter. Falling into a hole or off a rail-less edge puts you back 12 µm. Antibiotics reach about 60 µm ahead and 15 µm behind. In the second half the predatory bacterium <b>Bdellovibrio</b> appears, which homes on the leader and only a biofilm can stop; the biofilm itself wears off after 5 s. <i>C. jejuni</i> cannot metabolise the glucose on the track, and its boost item is pyruvate instead, which is a little stronger. Only <i>F. johnsoniae</i> speeds up on the pale chitin patches; the two <i>Vibrio</i> stick to them and slow down.',
  src:'Speeds: mean values for each species and environment shown in Movie S3 of <a href="https://www.biorxiv.org/content/10.64898/2026.11.04.764272v1">Cell-scale confinement reorders bacterial speed rankings</a> (bioRxiv); for <i>B. subtilis</i> in the viscous condition the on-screen value 57.4 is used. Course layouts, shortcut gains, the wrapping boost, battle balance and catch-up are game settings, not part of the paper’s speed data. The 90.9 µm/s swimming speed and 3.48 µm flagellum of the Bdellovibrio are measured values from <a href="https://doi.org/10.1111/1462-2920.70243">Sugiyama et al., Environ Microbiol 28 (2026)</a>. The SprB track of <i>F. johnsoniae</i> (a closed left-handed helical loop at about 20° to the long axis) follows <a href="https://www.pnas.org/doi/10.1073/pnas.1219753110">Nakane et al., PNAS 110, 11145 (2013)</a>. Antibiotic match-ups are a three-level simplification of Gram type, outer membrane and genus-level intrinsic resistance made for this game; they are not data from the paper, vary by strain, and must not be used for medical decisions.',
  barL:['open','visc','narrow'],gram:g=>'Gram'+(g==='＋'?'+':'−'),wrapOK:'can wrap',noGlu:'no glucose',gluNo:'Cannot use glucose — it has no glucokinase (its item is pyruvate instead)',chiOK:'digests chitin',chiBad:'sticks to chitin',chiStickFx:'stuck to chitin',chiStickSay:'Stuck to the chitin — its GlcNAc-binding proteins grip the surface',chiSign:'chitin',chiFx:'digesting chitin',chiSay:'Digesting chitin — faster while in contact',chiNo:'Cannot digest chitin — only F. johnsoniae can',
  legend:'Antibiotic match-up　<b class="e2">◎ works well</b> · <b class="e1">○ partly</b> · <b class="e0">× resistant</b>　How much it slows you differs by class: polymyxin, which wrecks the membrane, slows most; the flagella already built keep turning, so ribosome- and cell-wall-targeting classes slow less<br>',paren:(a,b)=>a+' ('+b+')',sep:' · ',
@@ -326,16 +331,16 @@ en:{
  env:['Open','Viscous','Narrow'],eff:['resistant','partly works','works well'],
  scSign:g=>'Shortcut · viscous ×'+g,noRail:'No rails — mind the edge',lg:['■ viscous','■ narrow','■ shortcut','■ holes / no rails','■ chitin'],scEnv:'Shortcut (viscous)',
  envInfo:(v,rk)=>`measured <b>${v} µm/s</b> · rank <b>${rk}</b> of 8`,inGame:v=>' · in-game '+v,pathX:g=>' · path ×'+g,
- glu:['Glucose','Ready-to-use energy. A burst of speed for about 2 s'],pyr:['Pyruvate','The carbon source for C. jejuni, which cannot use sugars. Stronger than glucose, about 3 s'],bio:['Biofilm','Extracellular matrix that blocks the next attack once'],phg:['Phage','Homes in on the cell just ahead and lyses it. Drug resistance does not help'],bde:['Bdellovibrio','A predatory bacterium that swims after the leader at 90.9 µm/s, invades the periplasm of Gram-negative prey and turns it into a bdelloplast. Resistance will not stop it; only a biofilm will. Against Gram-positive B. subtilis it only half works'],
+ glu:['Glucose','Ready-to-use energy. A burst of speed for about 2 s'],pyr:['Pyruvate','The carbon source for C. jejuni, which cannot use sugars. Stronger than glucose, about 3 s'],bio:['Biofilm','Extracellular matrix that blocks the next attack once. It wears off after 5 s, so time it'],phg:['Phage','Homes in on the cell just ahead and lyses it. Drug resistance does not help'],bde:['Bdellovibrio','A predatory bacterium that swims after the leader at 90.9 µm/s, invades the periplasm of Gram-negative prey and turns it into a bdelloplast. Resistance will not stop it; only a biofilm will. Against Gram-positive B. subtilis it only half works'],
  none:'None',noneSub:'Grab a spinning box to get one',got:n=>'Got '+n,
- bioFx:'Biofilm blocked it',bioSay:'Your biofilm blocked the attack',phFx:'Phage infection!',bdeFx:w=>w+' invaded!',bdeOff:'Gram-positive — partial',bdeFly:(w,n)=>w+' launched → '+n,bdeWarn:w=>w+' incoming! Only a biofilm blocks it',bdeNone:'You are in the lead, so there is no target',bdeMe:(w,n)=>n+'’s '+w+' invaded you!',bdeHit:(w,n)=>w+' reached '+n,bdeOffSay:(w,n)=>n+'’s '+w+': Gram-positive, so no invasion — only its lytic enzymes slow you',bdeOffHit:n=>n+' is Gram-positive — no invasion, only slowed',phMe:n=>'Infected by '+n+'’s phage!',phHit:n=>'Phage hit '+n,
+ bioFx:'Biofilm blocked it',bioLab:'Biofilm',bioGone:'Your biofilm has worn off',bioSay:'Your biofilm blocked the attack',phFx:'Phage infection!',bdeFx:w=>w+' invaded!',bdeOff:'Gram-positive — partial',bdeFly:(w,n)=>w+' launched → '+n,bdeWarn:w=>w+' incoming! Only a biofilm blocks it',bdeNone:'You are in the lead, so there is no target',bdeMe:(w,n)=>n+'’s '+w+' invaded you!',bdeHit:(w,n)=>w+' reached '+n,bdeOffSay:(w,n)=>n+'’s '+w+': Gram-positive, so no invasion — only its lytic enzymes slow you',bdeOffHit:n=>n+' is Gram-positive — no invasion, only slowed',phMe:n=>'Infected by '+n+'’s phage!',phHit:n=>'Phage hit '+n,
  resFx:k=>k+' resistant',resMe:(n,c)=>n+'’s '+c+' → resistant, no effect!',abxMe:(n,c,e)=>n+'’s '+c+': '+e+'…',gluFx:'Glucose!',pyrFx:'Pyruvate!',
  phNone:'Nobody ahead. The phage found no host and drifted away',abxNone:c=>c+': nobody in range',abxZero:(c,n)=>c+': no effect on the '+n+' in range',abxHit:(c,n)=>c+': hit '+n,
  fell:'Out of bounds! Restarting a little further back',scIn:g=>'Shortcut: viscous, but path ×'+g,wrapOn:'Wrap ON',wrapOff:'Wrap OFF',goal:n=>n+' finished!',
  rc:(c,l,m)=>c+' ('+l+' µm · '+m+')',win:'You win!',place:r=>ord(r)+' place',time:s=>`Time ${s} s.`,timeout:d=>`Time up. You reached ${d} µm.`,
  theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
  stats:(h,k,f)=>`hits ${h} · taken ${k} · falls ${f}`,
- wIn:x=>'boosting in narrow ×'+x,wOut:x=>'slower in the open ×'+x+' (Shift to release)',wOffIn:'Press Shift to boost here',wOff:'Shift to toggle',timeup:n=>'Time up in '+n+' s'
+ wIn:x=>'boosting in narrow ×'+x,wOut:x=>'slower in the open ×'+x+' (Shift to release)',wOutFree:'no penalty in the open — its leading flagellum wraps during normal swimming too',wOffIn:'Press Shift to boost here',wOff:'Shift to toggle',timeup:n=>'Time up in '+n+' s'
 }};
 const t=(k,...a)=>{const v=TX[lang][k];return typeof v==='function'?v(...a):v;};
 const spLocal=sp=>lang==='ja'?sp.jp:EN_SP[sp.id][0],spDesc=sp=>lang==='ja'?sp.desc:EN_SP[sp.id][1];
@@ -345,7 +350,8 @@ const WRAP_IN=1.25,WRAP_OUT=.85;
 const sprbV=v=>v>.2?2+v*.12:0;
 const PRED_REAL=90.9,FAST_REAL=57.4;   // Bdellovibrio BIS2 vs the fastest racer, both measured
 const predSpeed=()=>PRED_REAL/FAST_REAL*(battle?32+.2*FAST_REAL:FAST_REAL);
-const MAXM=1.6;   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
+const MAXM=1.6;
+const BIO_T=5;    // how long a biofilm lasts, in seconds   // ceiling on the combined speed multiplier, so boosts cannot stack without limit
 const TS=.4, FLOOR=-.8, HW=6.5, EDGE=HW-.6, CHW=.625, SW=1.7, BUMP=15, DEADLINE=20;
 const hex=c=>'#'+c.toString(16).padStart(6,'0');
 const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -853,7 +859,7 @@ function useItem(r){
   r.item=null;
   if(it==='glu'){r.boostT=2.2;r.boostM=1.5;fx(r,t('gluFx'),'#fff07a');}
   else if(it==='pyr'){r.boostT=3;r.boostM=1.8;fx(r,t('pyrFx'),'#ffc24d');}
-  else if(it==='bio'){r.shieldT=7;}
+  else if(it==='bio'){r.shieldT=BIO_T;}
   else if(it==='phg'){
     const tg=racers.filter(o=>o!==r&&o.finish==null&&o.dist>r.dist).sort((a,b)=>a.dist-b.dist)[0];
     if(!tg){if(r===p)say(t('phNone'));}
@@ -964,15 +970,15 @@ function stepRace(dt){
         if(r===p)say(t('scIn',s.gain.toFixed(2)),1.6);break;}
     }
     if(r===p){if(usePressed&&!done&&r.spinT<=0)useItem(r);}else if(!done)aiItem(r,dt);
-    for(const k of['boostT','slowT','spinT','shieldT','immT'])if(r[k]>0)r[k]-=dt;
+    for(const k of['boostT','slowT','spinT','shieldT','immT'])if(r[k]>0){r[k]-=dt;if(k==='shieldT'&&r[k]<=0&&r===p)say(t('bioGone'),1.4);}
     const e=renv(r);
     let mult=(r.boostT>0?r.boostM:1)*(r.slowT>0?r.slowM:1)*(r.spinT>0?.12:1);
     if(r!==p)mult*=1+.04*Math.sin(clock/TS*r.fq+r.ph);
     if(r.m.wrap){
-      if(r!==p)r.wrapOn=e===2;
+      if(r!==p)r.wrapOn=e===2||(r.sp.wrapOut||WRAP_OUT)>=1;
       else if(wrapPressed&&!done){r.wrapOn=!r.wrapOn;fx(r,t(r.wrapOn?'wrapOn':'wrapOff'),'#ffffff');}
       r.wrapK=clamp(r.wrapK+(r.wrapOn?1:-1)*2.5*dt,0,1);
-      mult*=lerp(1,e===2?(r.sp.wrapIn||WRAP_IN):WRAP_OUT,r.wrapK);
+      mult*=lerp(1,e===2?(r.sp.wrapIn||WRAP_IN):(r.sp.wrapOut||WRAP_OUT),r.wrapK);
     }
     const chi=!r.br&&!done&&chitinAt(r.dist,r.lat),dig=r.sp.chitin;
     if(dig||r.sp.chiStick){
@@ -1071,7 +1077,7 @@ function frame(now){
       g.rotation.y=lerp(g.rotation.y%(Math.PI*2),head-steer*.22,.2);g.rotation.x=0;
       g.rotation.z=r.m.sprb?g.rotation.z+sprbV(r.v)*dt*TS*r.m.rollK:Math.sin(tAll*9+r.ph)*.07*Math.min(1,r.v/10);}
     if(r.m.wrap)for(const w of r.m.wrap){const k=r.wrapK*r.wrapK*(3-2*r.wrapK),xy=lerp(1,2.1,k);w.scale.set(xy,xy,lerp(1,-.62,k));}
-    r.m.shield.visible=r.shieldT>0;
+    r.m.shield.visible=r.shieldT>0&&(r.shieldT>1.5||Math.sin(tAll*22)>0);
     if(r.slowT>0)r.m.body.emissive.set(r.slowCol).multiplyScalar(.5+.4*Math.sin(tAll*14));
     else if(r.boostT>0)r.m.body.emissive.set(0xfff07a).multiplyScalar(.7);
     else if(r.chiT>.05)r.m.body.emissive.set(r.sp.chitin?0xdff0ea:0x5f9fd8).multiplyScalar(.25+.5*r.chiT);
@@ -1106,7 +1112,10 @@ function frame(now){
   if(p.m.wrap){const in3=renv(p)===2,el=$('wrap');
     el.classList.toggle('on',p.wrapOn);el.classList.toggle('warn',p.wrapOn!==in3);
     $('wk').textContent=t(p.wrapOn?'wrapOn':'wrapOff');
-    $('wh').textContent=p.wrapOn?(in3?t('wIn',p.sp.wrapIn||WRAP_IN):t('wOut',WRAP_OUT)):t(in3?'wOffIn':'wOff');}
+    const wo=p.sp.wrapOut||WRAP_OUT;
+    $('wh').textContent=p.wrapOn?(in3?t('wIn',p.sp.wrapIn||WRAP_IN):(wo>=1?t('wOutFree'):t('wOut',wo))):t(in3?'wOffIn':'wOff');}
+  {const el=$('shield'),on=p.shieldT>0;el.classList.toggle('hidden',!on);el.classList.toggle('low',on&&p.shieldT<=1.5);
+    if(on){$('sk').textContent=t('bioLab');$('sh').textContent=p.shieldT.toFixed(1)+' s';}}
   $('rk').textContent=o.indexOf(p)+1;
   $('tm').textContent=(p.finish!=null?p.finish:clock).toFixed(2);
   $('sv').textContent=p.v.toFixed(1);
