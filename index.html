@@ -653,10 +653,10 @@ function buildCourse(c){
   // Chitin patches. F. johnsoniae digests insoluble chitin by direct contact, so the
   // boost builds while the cell stays on the patch instead of arriving all at once.
   const chiM=std(0xc6d6d0),chiFM=basic(0xeaf4ef,{transparent:true,opacity:.8}),flakeGeo=new THREE.CircleGeometry(.24,5);
-  for(let d=34,lastK=-999,n=0;d<LEN-34&&n<9;d+=4){
-    if(d-lastK<38)continue;
+  for(let d=34,lastK=-999,n=0;d<LEN-34&&n<5;d+=4){
+    if(d-lastK<78)continue;
     const a=d;let b=0,ok=false;
-    for(const len of[40,26,18]){b=a+len;ok=true;
+    for(const len of[30,20,14]){b=a+len;ok=true;
       for(let z=a-2;z<=b+2;z+=2)if(chAt(z,2)||SCS.some(x=>z>x.a-6&&z<x.b+6)){ok=false;break;}
       if(ok)break;}
     if(!ok)continue;
