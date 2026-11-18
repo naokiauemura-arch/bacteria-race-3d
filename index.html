@@ -206,7 +206,7 @@ if(typeof THREE==='undefined'){
 // s: susceptibility to [β-lactam, glycopeptide, polymyxin, aminoglycoside, macrolide]; 2 = works well, 1 = partly, 0 = resistant (game simplification).
 const SPECIES=[
  {id:'cj',ab:'Cj',name:'C. jejuni',jp:'カンピロバクター・ジェジュニ',gram:'−',color:0x19c98a,v:[29.8,46.5,46.1],s:[0,0,0,2,2],shape:'spiral',wrap:true,wrapOut:1,noGlu:true,
-  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。前極のべん毛は通常の遊泳でも巻いているので、ラッピングを入れたままでも広い場所で損をしない。ただしグルコキナーゼを欠くため、道に落ちているグルコースでは加速できない。代わりに加速アイテムがピルビン酸になり、グルコースより強い。マクロライドとアミノグリコシドが弱点。'},
+  desc:'らせん形の体と両端のべん毛。粘性にも狭さにも強い。前方のべん毛を菌体に巻きつけるラッピングモードで狭小ルートがさらに伸びる。前極のべん毛は通常の遊泳でも巻いているので、ラッピングを入れたままでも広い場所で損をしない。ただしグルコキナーゼを欠くため、道に落ちているグルコースでは加速できない。代わりに加速アイテムがピルビン酸になり、グルコースより強く、やや出やすい。マクロライドとアミノグリコシドが弱点。'},
  {id:'ci',ab:'Ci',name:'C. insecticola',jp:'カバレロニア・インセクティコラ',gram:'−',color:0x3fae5a,v:[22.4,18.3,2.6],s:[0,0,0,2,0],shape:'tuft',nf:3,len:2.4,rad:.4,wrap:true,
   desc:'極べん毛の束で泳ぐ桿菌。べん毛を菌体に巻きつけるラッピングモードで狭小ルートを押し通れる。弱点はアミノグリコシドだけ。'},
  {id:'ba',ab:'Ba',name:'B. anthina',jp:'バークホルデリア・アンシナ',gram:'−',color:0x9aa3aa,v:[12.5,8.9,1.0],s:[0,0,0,0,0],shape:'tuft',nf:3,len:2.6,rad:.42,
@@ -265,7 +265,7 @@ const MODES=[
 let lang='ja';
 try{const s=localStorage.getItem('br3d-lang');if(s==='en'||s==='ja')lang=s;else if(typeof navigator!=='undefined'&&!/^ja/i.test(navigator.language||'ja'))lang='en';}catch(e){}
 const EN_SP={
- cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes; because its leading flagellum wraps during normal swimming anyway, leaving wrapping on costs it nothing in open water. It has no glucokinase, so the glucose on the track gives it no boost; its boost item is pyruvate instead, which is stronger. Weak to macrolides and aminoglycosides.'],
+ cj:['Campylobacter jejuni','Spiral body with a flagellum at each pole. Strong in both viscous and narrow sections; wrapping its leading flagellum around the body pushes it further in narrow routes; because its leading flagellum wraps during normal swimming anyway, leaving wrapping on costs it nothing in open water. It has no glucokinase, so the glucose on the track gives it no boost; its boost item is pyruvate instead, which is stronger and turns up a little more often. Weak to macrolides and aminoglycosides.'],
  ci:['Caballeronia insecticola','Rod with a polar bundle of flagella. Wrapping them around the body lets it force its way through narrow routes. Its only weakness is aminoglycosides.'],
  ba:['Burkholderia anthina','Slow everywhere, but as a cepacia-complex member it shrugs off all five antibiotic classes in this game. Take the non-viscous roads and play it steady.'],
  se:['Salmonella enterica','Steady all-rounder driven by peritrichous flagella that emerge along the cell sides and bundle behind it. Viscous shortcuts pay off, narrow routes do not. β-lactams, polymyxins and aminoglycosides work well against it.'],
@@ -820,7 +820,7 @@ function showItem(){
 function rollItem(r){
   const o=order().filter(x=>x.finish==null),f=o.length>1?o.indexOf(r)/(o.length-1):0;
   const bo=r.sp.noGlu?'pyr':'glu';
-  const w=[[bo,4-2*f],['bio',2.5-1.5*f],['phg',.4+5*f]];for(let k=0;k<5;k++)w.push([k,.65+.65*f]);
+  const w=[[bo,(4-2*f)*(r.sp.noGlu?1.6:1)],['bio',2.5-1.5*f],['phg',.4+5*f]];for(let k=0;k<5;k++)w.push([k,.65+.65*f]);
   if(r.dist>LEN*.28&&o.indexOf(r)>=2)w.push(['bde',1.6]);
   let t=Math.random()*w.reduce((a,x)=>a+x[1],0);for(const[k,x]of w){if((t-=x)<=0)return k;}return bo;
 }
