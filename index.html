@@ -195,6 +195,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <p class="sum" id="rs"></p>
   <table id="rt"></table>
   <div id="lb"></div>
+  <div id="lbg"></div>
   <div class="btns"><button class="p" id="again"></button><button id="back"></button></div>
 </div></div>
 
@@ -331,7 +332,10 @@ ja:{
  theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,
  lbT:'このコースの記録',lbNew:'自己最高',lbRank:(r,n)=>r+' 位 / '+n+' 件',
  lbNone:'まだ記録がありません',lbMine:'あなた',lbCond:(m,d)=>m+'・CPU '+d,
- lbKept:'この端末に上位100件まで保存されます',up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
+ lbKept:'この端末に上位100件まで保存されます',
+ lbLocal:'この端末',lbWorld:'全体',lbSending:'全体の順位を問い合わせ中…',
+ lbOff:'全体の記録につながりませんでした（この端末の記録は残っています）',
+ lbWorldKept:'全体では上位100件まで保存されます',up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
  stats:(h,k,f)=>`命中 ${h}・被弾 ${k}・場外 ${f}`,
  wIn:x=>'狭小で加速中 ×'+x,wOut:x=>'広い場所では減速 ×'+x+'（Shiftで解除）',wOutFree:'広い場所でも減速なし — 前極のべん毛は通常の遊泳でも巻いている',wOffIn:'Shift でONにすると加速',wOff:'Shift で切替',timeup:n=>'タイムアップまで '+n+' 秒'
 },
@@ -358,7 +362,10 @@ en:{
  theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,
  lbT:'Times on this course',lbNew:'personal best',lbRank:(r,n)=>ord(r)+' of '+n,
  lbNone:'No times yet',lbMine:'you',lbCond:(m,d)=>m+' · CPU '+d,
- lbKept:'The best 100 are kept on this device',up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
+ lbKept:'The best 100 are kept on this device',
+ lbLocal:'this device',lbWorld:'everyone',lbSending:'Asking for your place among all runs…',
+ lbOff:'Could not reach the shared table (your own record is safe)',
+ lbWorldKept:'The best 100 of everyone are kept',up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
  stats:(h,k,f)=>`hits ${h} · taken ${k} · falls ${f}`,
  wIn:x=>'boosting in narrow ×'+x,wOut:x=>'slower in the open ×'+x+' (Shift to release)',wOutFree:'no penalty in the open — its leading flagellum wraps during normal swimming too',wOffIn:'Press Shift to boost here',wOff:'Shift to toggle',timeup:n=>'Time up in '+n+' s'
 }};
@@ -784,6 +791,32 @@ function toMenu(){
   state='menu';$('menu').classList.remove('hidden');$('blurb').classList.remove('hidden');
   $('hud').classList.add('hidden');$('result').classList.add('hidden');refreshMenu();
 }
+/* ---- the shared table, held by a small Cloudflare Worker ---- */
+const SCORE_API='https://divine-shape-bbf9.naoki-a-uemura.workers.dev';
+async function lbPost(time,spAb){
+  const r=await fetch(SCORE_API+'/score',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({b:lbBucket(),t:+time.toFixed(2),s:spAb})});
+  if(!r.ok)throw new Error('http '+r.status);
+  return r.json();
+}
+function lbWorldTable(res){
+  const rows=(res.top||[]).slice(0,8).map((r,i)=>
+    `<tr><td>${i+1}</td><td><span class="nm">${r.s}</span></td>
+      <td class="num">${(+r.t).toFixed(2)} s</td></tr>`).join('');
+  const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
+  return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${t('lbWorld')}</div>
+    <h3 style="margin:2px 0 6px">${head}</h3>
+    <table>${rows}</table>
+    <p class="sum" style="opacity:.7">${t('lbWorldKept')}</p>`;
+}
+function lbSend(time,spAb){
+  const box=$('lbg');if(!box)return;
+  box.innerHTML=`<p class="sum" style="opacity:.6;margin-top:12px">${t('lbSending')}</p>`;
+  lbPost(time,spAb).then(res=>{box.innerHTML=lbWorldTable(res);})
+    .catch(()=>{box.innerHTML=`<p class="sum" style="opacity:.6;margin-top:12px">${t('lbOff')}</p>`;});
+}
+
 /* ---- lap records, kept on this device only ----
    One table per course, mode and CPU setting, because those change the times
    completely. Only finished races count, and only the best 100 are kept. */
@@ -808,7 +841,7 @@ function lbTable(res){
       <td><span class="nm">${r.s}</span>${r.me?'<span class="you">'+t('lbMine')+'</span>':''}</td>
       <td class="num">${r.t.toFixed(2)} s</td></tr>`).join('');
   const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
-  return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${
+  return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${t('lbLocal')}　${
     t('lbCond',moT(modeIdx,'name'),t('df')[diffIdx][0])}</div>
     <h3 style="margin:2px 0 6px">${head}${res.rank===1?'　★ '+t('lbNew'):''}</h3>
     <table>${rows}</table>
@@ -1110,6 +1143,8 @@ function finish(){
   $('rt').innerHTML=o.map((r,i)=>`<tr class="${r===p?'me':''}"><td>${i+1}</td><td><span class="nm" style="color:${hex(r.sp.color)}">${r.sp.name}</span>${r===p?'<span class="you">YOU</span>':''}</td><td class="h num">${t('stats',r.hits,r.taken,r.falls)}</td><td class="num">${
     r.finish!=null?r.finish.toFixed(2)+' s':clamp(r.dist,0,LEN).toFixed(1)+' µm'}</td></tr>`).join('');
   $('lb').innerHTML=p.finish!=null?lbTable(lbAdd(p.finish,p.sp.ab)):'';
+  $('lbg').innerHTML='';
+  if(p.finish!=null)lbSend(p.finish,p.sp.ab);
   $('result').classList.remove('hidden');
 }
 
