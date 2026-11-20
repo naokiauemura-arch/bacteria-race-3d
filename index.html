@@ -169,6 +169,11 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <div><h2 id="t_hco"></h2><div id="courses" class="row"></div></div>
   <div><h2 id="t_hmo"></h2><div id="modes" class="row"></div></div>
   <div><h2 id="t_hdf"></h2><div id="diffs" class="row"></div></div>
+  <div><h2 id="t_hnm"></h2>
+    <input id="pname" maxlength="12" autocomplete="nickname"
+      style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+             background:rgba(255,255,255,.04);color:var(--ink);font:inherit">
+    <p class="legend" id="t_nmnote"></p></div>
   <button id="go"></button>
   <p class="keys" id="t_keys"></p>
   <p class="src" id="t_src"></p>
@@ -333,6 +338,7 @@ ja:{
  lbT:'このコースの記録',lbNew:'自己最高',lbRank:(r,n)=>r+' 位 / '+n+' 件',
  lbNone:'まだ記録がありません',lbMine:'あなた',lbCond:(m,d)=>m+'・CPU '+d,
  lbKept:'この端末に上位100件まで保存されます',
+ nameH:'プレイヤー名',namePh:'名前（12文字まで）',nameNote:'記録に残ります。空欄なら「名無し」',anon:'名無し',
  lbLocal:'この端末',lbWorld:'全体',lbSending:'全体の順位を問い合わせ中…',
  lbOff:'全体の記録につながりませんでした（この端末の記録は残っています）',
  lbWorldKept:'全体では上位100件まで保存されます',up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
@@ -363,6 +369,7 @@ en:{
  lbT:'Times on this course',lbNew:'personal best',lbRank:(r,n)=>ord(r)+' of '+n,
  lbNone:'No times yet',lbMine:'you',lbCond:(m,d)=>m+' · CPU '+d,
  lbKept:'The best 100 are kept on this device',
+ nameH:'Player name',namePh:'name (up to 12)',nameNote:'Shown with your times. Blank means "anon"',anon:'anon',
  lbLocal:'this device',lbWorld:'everyone',lbSending:'Asking for your place among all runs…',
  lbOff:'Could not reach the shared table (your own record is safe)',
  lbWorldKept:'The best 100 of everyone are kept',up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
@@ -743,8 +750,14 @@ function buildCourse(c){
 /* ================= menu UI ================= */
 let meIdx=7,courseIdx=0,modeIdx=0,diffIdx=1;
 const VMAX=57.4;
+let pname='';
+try{pname=localStorage.getItem('br3d-name')||'';}catch(e){}
+const cleanName=n=>String(n==null?'':n).replace(/[\u0000-\u001f<>&"']/g,'').trim().slice(0,12);
+const myName=()=>cleanName(pname)||t('anon');
 function renderMenu(){
   document.documentElement.lang=lang;document.title=t('title');
+  $('t_hnm').textContent=t('nameH');$('t_nmnote').textContent=t('nameNote');
+  $('pname').placeholder=t('namePh');$('pname').value=pname;
   for(const[id,k]of[['t_title','title'],['t_lead','lead'],['t_hsp','hSp'],['t_hco','hCo'],['t_hmo','hMo'],['t_hdf','hDf'],['go','go'],['t_keys','keys'],['t_src','src'],
     ['t_of','of8'],['t_slow','slow'],['t_il','itemLab'],['tw','tw'],['tu','tu'],['quit','quit'],['again','again'],['back','back']])$(id).innerHTML=t(k);
   document.querySelectorAll('#lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
@@ -763,6 +776,8 @@ function refreshMenu(){
   setPreview(SPECIES[meIdx]);
 }
 $('species').addEventListener('click',e=>{const b=e.target.closest('.sp');if(b){meIdx=+b.dataset.i;refreshMenu();}});
+$('pname').addEventListener('input',e=>{pname=cleanName(e.target.value);
+  try{localStorage.setItem('br3d-name',pname);}catch(_){}} );
 $('courses').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){courseIdx=+b.dataset.i;refreshMenu();}});
 $('modes').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){modeIdx=+b.dataset.i;refreshMenu();}});
 $('diffs').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){diffIdx=+b.dataset.i;refreshMenu();}});
@@ -791,18 +806,20 @@ function toMenu(){
   state='menu';$('menu').classList.remove('hidden');$('blurb').classList.remove('hidden');
   $('hud').classList.add('hidden');$('result').classList.add('hidden');refreshMenu();
 }
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ---- the shared table, held by a small Cloudflare Worker ---- */
 const SCORE_API='https://divine-shape-bbf9.naoki-a-uemura.workers.dev';
 async function lbPost(time,spAb){
   const r=await fetch(SCORE_API+'/score',{method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({b:lbBucket(),t:+time.toFixed(2),s:spAb})});
+    body:JSON.stringify({b:lbBucket(),t:+time.toFixed(2),s:spAb,n:myName()})});
   if(!r.ok)throw new Error('http '+r.status);
   return r.json();
 }
 function lbWorldTable(res){
   const rows=(res.top||[]).slice(0,8).map((r,i)=>
-    `<tr><td>${i+1}</td><td><span class="nm">${r.s}</span></td>
+    `<tr><td>${i+1}</td><td><span class="nm">${esc(r.n||t('anon'))}</span>
+      <small style="opacity:.6">${r.s}</small></td>
       <td class="num">${(+r.t).toFixed(2)} s</td></tr>`).join('');
   const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
   return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${t('lbWorld')}</div>
@@ -826,7 +843,7 @@ function lbSave(o){try{localStorage.setItem(LB_KEY,JSON.stringify(o));}catch(e){
 const lbBucket=()=>COURSES[courseIdx].id+'|'+(modeIdx===0?'battle':'measured')+'|'+diffIdx;
 function lbAdd(time,spAb){
   const all=lbLoad(),k=lbBucket(),list=all[k]||[];
-  const row={t:+time.toFixed(2),s:spAb,d:Date.now(),me:1};
+  const row={t:+time.toFixed(2),s:spAb,n:myName(),d:Date.now(),me:1};
   for(const r of list)delete r.me;                 // only the newest run is "you"
   list.push(row);
   list.sort((a,b)=>a.t-b.t);
@@ -838,7 +855,8 @@ function lbAdd(time,spAb){
 function lbTable(res){
   const rows=res.list.slice(0,8).map((r,i)=>
     `<tr class="${r.me?'me':''}"><td>${i+1}</td>
-      <td><span class="nm">${r.s}</span>${r.me?'<span class="you">'+t('lbMine')+'</span>':''}</td>
+      <td><span class="nm">${esc(r.n||t('anon'))}</span> <small style="opacity:.6">${r.s}</small>${
+        r.me?'<span class="you">'+t('lbMine')+'</span>':''}</td>
       <td class="num">${r.t.toFixed(2)} s</td></tr>`).join('');
   const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
   return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${t('lbLocal')}　${

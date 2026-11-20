@@ -55,6 +55,12 @@ function parseBucket(b) {
 
 // A light brake on one address hammering the endpoint. Lives in the isolate,
 // so it is not exact — it only exists to stop accidental loops.
+// Names are typed by players, so keep them short and strip anything that could
+// confuse the page that displays them.
+function cleanName(n) {
+  return String(n == null ? '' : n).replace(/[\u0000-\u001f<>&"']/g, '').trim().slice(0, 12);
+}
+
 const seen = new Map();
 function tooFast(ip) {
   const now = Date.now(), last = seen.get(ip) || 0;
@@ -96,7 +102,7 @@ export default {
       if (!SPECIES.includes(s)) return json({ error: 'bad species' }, origin, 400);
 
       const list = JSON.parse(await env.SCORES.get(key) || '[]');
-      const row = { t: +t.toFixed(2), s: s, d: Date.now() };
+      const row = { t: +t.toFixed(2), s: s, n: cleanName(body.n), d: Date.now() };
       list.push(row);
       list.sort((a, b2) => a.t - b2.t);
       const rank = list.indexOf(row) + 1;
