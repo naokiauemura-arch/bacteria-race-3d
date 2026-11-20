@@ -6,6 +6,10 @@
 <title>バクテリア・レース 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Visit counting: GoatCounter. No cookies, no personal data; it counts page views
+     and a few anonymous in-game events (which cell, which course, how the race ended). -->
+<script data-goatcounter="https://uemura.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 <style>
 :root{
   --ink:#e9f1f4; --dim:#8fa5b0; --line:rgba(233,241,244,.14);
@@ -264,6 +268,13 @@ const MODES=[
  {name:'実測そのまま',sub:'アイテムもキチンも補正もなし。論文の実測値だけで走る'}
 ];
 /* ================= language ================= */
+// Send one anonymous event. Does nothing if the counter is blocked or offline.
+function gc(path,title){
+  try{
+    if(window.goatcounter&&window.goatcounter.count)
+      window.goatcounter.count({path:path,title:title||path,event:true});
+  }catch(e){}
+}
 let lang='ja';
 try{const s=localStorage.getItem('br3d-lang');if(s==='en'||s==='ja')lang=s;else if(typeof navigator!=='undefined'&&!/^ja/i.test(navigator.language||'ja'))lang='en';}catch(e){}
 const EN_SP={
@@ -731,7 +742,7 @@ function renderMenu(){
   $('modes').innerHTML=MODES.map((c,i)=>`<button class="co" data-g="m" data-i="${i}">${moT(i,'name')}<small>${moT(i,'sub')}</small></button>`).join('');
   $('diffs').innerHTML=t('df').map((d,i)=>`<button class="co" data-g="d" data-i="${i}">${d[0]}<small>${d[1]}</small></button>`).join('');
 }
-$('lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('br3d-lang',lang);}catch(_){}renderMenu();refreshMenu();});
+$('lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;gc('lang/'+lang);try{localStorage.setItem('br3d-lang',lang);}catch(_){}renderMenu();refreshMenu();});
 function refreshMenu(){
   document.querySelectorAll('.sp').forEach((b,i)=>b.setAttribute('aria-pressed',i===meIdx));
   document.querySelectorAll('.co').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i==={c:courseIdx,m:modeIdx,d:diffIdx}[b.dataset.g]));
@@ -762,11 +773,16 @@ let phages=[],waves=[];
 const me=()=>racers[meIdx];
 
 function toMenu(){
+  if(state==='run'||state==='count')gc('race-quit');
   state='menu';$('menu').classList.remove('hidden');$('blurb').classList.remove('hidden');
   $('hud').classList.add('hidden');$('result').classList.add('hidden');refreshMenu();
 }
 function startRace(){
   battle=modeIdx===0;DF=DIFFS[diffIdx];
+  gc('race-start/'+SPECIES[meIdx].ab+'/'+COURSES[courseIdx].id,
+     'Race: '+SPECIES[meIdx].name+' on '+COURSES[courseIdx].id);
+  gc('mode/'+(modeIdx===0?'battle':'measured'));
+  gc('diff/'+['easy','normal','hard','extra'][diffIdx]);
   buildCourse(COURSES[courseIdx]);
   for(const p of phages)scene.remove(p.g);for(const w of waves)scene.remove(w.m);phages=[];waves=[];
   const slots=[0,1,2,3,4,5,6,7].sort(()=>Math.random()-.5);
@@ -1045,6 +1061,8 @@ function stepRace(dt){
 function finish(){
   state='done';
   const o=order(),p=me(),rank=o.indexOf(p)+1;
+  gc('race-end/'+p.sp.ab+'/'+(p.finish!=null?'rank'+rank:'timeout'),
+     'Finished '+rank+' as '+p.sp.name);
   const theo=SPECIES.map(s=>{let t=0;for(let d=0;d<LEN;d+=2)t+=2/speedOf(s,envAt(d,0));return{s,t};}).sort((a,b)=>a.t-b.t);
   $('rc').textContent=t('rc',coT(course,'name'),LEN,moT(modeIdx,'name'),t('df')[diffIdx][0]);
   $('rh').textContent=rank===1?t('win'):t('place',rank);
