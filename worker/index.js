@@ -216,7 +216,7 @@ export class Room {
         break;
       }
       case 'cs': { if (id === this.host) this.all({ t: 'cs', a: m.a }, id); break; }
-      case 'hit': { this.all({ t: 'hit', from: id, to: m.to, k: m.k }, id); break; }
+      case 'hit': { this.all({ t: 'hit', from: id, to: m.to, k: m.k, sp: m.sp }, id); break; }
       case 'fin': {
         const time = Number(m.time);
         if (!(time >= T_MIN && time <= T_MAX)) break;

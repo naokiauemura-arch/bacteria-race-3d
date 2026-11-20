@@ -850,7 +850,7 @@ const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
    Hits are reported by whoever lands them, so this only works among people
    who are not trying to cheat. */
 const NET={ws:null,on:false,inRoom:false,id:null,host:false,code:'',players:[],
-  byId:{},rem:{},last:0,res:null};
+  byId:{},rem:{},cpu:{},last:0,lastCpu:0,res:null};
 function netUrl(code){
   return SCORE_API.replace(/^http/,'ws')+'/room/'+encodeURIComponent(code);
 }
@@ -870,7 +870,7 @@ function netJoin(code){
   ws.onerror=()=>{};
 }
 function netLeave(){
-  NET.on=false;NET.inRoom=false;NET.players=[];NET.byId={};NET.rem={};
+  NET.on=false;NET.inRoom=false;NET.players=[];NET.byId={};NET.rem={};NET.cpu={};
   if(NET.ws){try{NET.ws.close();}catch(e){}NET.ws=null;}
   renderLobby('');refreshMenu();
 }
@@ -891,12 +891,15 @@ function netOn(m){
     if(m.set){courseIdx=Math.max(0,COURSES.findIndex(c=>c.id===m.set.course));
       modeIdx=m.set.mode==='battle'?0:1;diffIdx=m.set.diff;}
     NET.byId={};for(const p of (m.players||[]))NET.byId[p.id]=p;
-    NET.rem={};
+    NET.rem={};NET.cpu={};
+    NET.host=m.host===NET.id;
     for(const p of (m.players||[])){
       if(p.id===NET.id||!p.sp)continue;
       const i=SPECIES.findIndex(s=>s.ab===p.sp);
       if(i>=0)NET.rem[i]={d:0,x:0,td:0,tx:0,name:p.name,id:p.id};
     }
+    if(!NET.host)for(let i=0;i<SPECIES.length;i++)
+      if(i!==meIdx&&!NET.rem[i])NET.cpu[i]={d:0,x:0,td:0,tx:0,f:0};
     startRace();
   }
   else if(m.t==='s'){
@@ -905,11 +908,16 @@ function netOn(m){
     const r=NET.rem[i];if(!r)return;
     r.td=m.d;r.tx=m.x;r.f=m.f;
   }
+  else if(m.t==='cs'){
+    if(NET.host||!Array.isArray(m.a))return;
+    for(const [i,d,x,f] of m.a){const q=NET.cpu[i];if(q){q.td=d;q.tx=x;q.f=f;}}
+  }
   else if(m.t==='hit'){
     const to=NET.byId[m.to];
     if(to&&to.id===NET.id){
       const from=NET.byId[m.from];
-      const si=from&&from.sp?SPECIES.findIndex(s=>s.ab===from.sp):-1;
+      const ab=m.sp||(from&&from.sp);
+      const si=ab?SPECIES.findIndex(s=>s.ab===ab):-1;
       strike(me(),si>=0?racers[si]:me(),m.k==='phg'||m.k==='bde'?m.k:'abx',+m.k>=0?+m.k:0);
     }
   }
@@ -922,6 +930,8 @@ function netOn(m){
   }
 }
 const isRemote=r=>NET.on&&NET.rem[r.i]!=null;
+const isNetCpu=r=>NET.on&&!NET.host&&NET.cpu[r.i]!=null;
+const netDriven=r=>isRemote(r)||isNetCpu(r);
 function netTick(dt){
   if(!NET.on)return;
   // our own position, ten times a second
@@ -931,7 +941,23 @@ function netTick(dt){
     netSend({t:'s',d:+p.dist.toFixed(2),x:+rx(p).toFixed(2),
       f:(p.boostT>0?1:0)|(p.slowT>0?2:0)|(p.spinT>0?4:0)|(p.shieldT>0?8:0)|(p.fallT>0?16:0)});
   }
+  // the host keeps the CPU racers, and hands their positions round
+  if(NET.host&&(state==='race'||state==='count')&&now-NET.lastCpu>100){
+    NET.lastCpu=now;const a=[];
+    for(const r of racers){
+      if(r.i===meIdx||NET.rem[r.i])continue;
+      a.push([r.i,+r.dist.toFixed(2),+rx(r).toFixed(2),
+        (r.boostT>0?1:0)|(r.slowT>0?2:0)|(r.spinT>0?4:0)|(r.shieldT>0?8:0)]);
+    }
+    if(a.length)netSend({t:'cs',a:a});
+  }
   // the others glide towards where they said they were
+  for(const k in NET.cpu){
+    const q=NET.cpu[k],r=racers[k];if(!r)continue;
+    q.d+=(q.td-q.d)*Math.min(1,dt*9);q.x+=(q.tx-q.x)*Math.min(1,dt*9);
+    r.dist=q.d;
+    r.boostT=(q.f&1)?.2:0;r.slowT=(q.f&2)?.2:0;r.spinT=(q.f&4)?.2:0;r.shieldT=(q.f&8)?.2:0;
+  }
   for(const k in NET.rem){
     const q=NET.rem[k],r=racers[k];if(!r)continue;
     q.d+=(q.td-q.d)*Math.min(1,dt*9);
@@ -1119,9 +1145,10 @@ function giveItem(r){
 function strike(tg,src,kind,k){ // returns true if it had an effect
   // When we are the one landing it on somebody else's cell, tell them, so the
   // slowdown happens on their screen too.
-  if(NET.on&&src===me()&&isRemote(tg)){
+  if(NET.on&&isRemote(tg)&&(src===me()||(NET.host&&!netDriven(src)))){
     const q=NET.rem[tg.i];
-    if(q&&q.id)netSend({t:'hit',to:q.id,k:(kind==='phg'||kind==='bde')?kind:String(k)});
+    if(q&&q.id)netSend({t:'hit',to:q.id,sp:src.sp.ab,
+      k:(kind==='phg'||kind==='bde')?kind:String(k)});
   }
   if(tg.finish!=null||tg.fallT>0||(tg.immT>0&&kind!=='bde'))return false;
   const p=me();
@@ -1242,7 +1269,7 @@ function stepRace(dt){
   const lead=racers.reduce((a,r)=>r.finish==null?Math.max(a,r.dist):a,-99);
   for(const r of racers){
     const done=r.finish!=null;
-    if(isRemote(r))continue;            // driven by what that player sends
+    if(netDriven(r))continue;           // driven by what arrives over the wire
     if(r.fallT>0){if((r.fallT-=dt)<=0)respawn(r);continue;}
     const steer=r===p?((keys.right?1:0)-(keys.left?1:0)):0;
     if(r.br){ // inside a shortcut
@@ -1306,6 +1333,7 @@ function stepRace(dt){
   for(const q of pick){
     if(q.cd>0){if((q.cd-=dt)<=0)q.m.visible=true;continue;}
     for(const r of racers){
+      if(netDriven(r))continue;
       if(r.finish!=null||r.fallT>0||r.br!==q.br||Math.abs(r.dist-q.d)>1.4||Math.abs((r.br?r.blat:r.lat)-q.lat)>1)continue;
       if(q.type==='glu'){if(r.sp.noGlu){if(r===me()&&!gluMsg){gluMsg=true;fx(r,t('noGlu'),'#8fa5b0');say(t('gluNo'),2);}continue;}if(r.boostT<=0)r.boostM=1.5;r.boostT=Math.max(r.boostT,.9);q.cd=5;q.m.visible=false;break;}
       if(r.item==null){giveItem(r);q.cd=3;q.m.visible=false;break;}
@@ -1368,7 +1396,7 @@ function frame(now){
 
   const p=me(),o=order(),moving=state!=='count';
   for(const r of racers){
-    const g=r.m.g,x=isRemote(r)?NET.rem[r.i].x:rx(r),z=-r.dist;
+    const g=r.m.g,x=isRemote(r)?NET.rem[r.i].x:(isNetCpu(r)?NET.cpu[r.i].x:rx(r)),z=-r.dist;
     const y=r.fallT>0?-(.8-r.fallT)*9:Math.sin(tAll*2+r.ph)*.06;
     g.position.set(x,y,z);
     spinModel(r.m,moving?6+r.v*.8:5,dt);
