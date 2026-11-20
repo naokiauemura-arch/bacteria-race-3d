@@ -1455,6 +1455,8 @@ function frame(now){
   renderer.render(scene,camera);
 }
 renderMenu();refreshMenu();
+if(location.search.indexOf('dbg')>=0)window.__br3d={NET:NET,racers:()=>racers,
+  state:()=>state,me:()=>meIdx};
 requestAnimationFrame(frame);
 })();
 </script>
