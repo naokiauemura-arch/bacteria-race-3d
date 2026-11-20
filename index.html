@@ -194,6 +194,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <h3 id="rh"></h3>
   <p class="sum" id="rs"></p>
   <table id="rt"></table>
+  <div id="lb"></div>
   <div class="btns"><button class="p" id="again"></button><button id="back"></button></div>
 </div></div>
 
@@ -327,7 +328,10 @@ ja:{
  phNone:'前に誰もいない。ファージは宿主を見つけられず拡散した',abxNone:c=>c+'：射程内に誰もいない',abxZero:(c,n)=>c+'：射程内の '+n+' 菌には効かなかった',abxHit:(c,n)=>c+'：'+n+' 菌に命中',
  fell:'場外！少し手前からやり直し',scIn:g=>'近道へ：粘性ありだが道のり ×'+g,wrapOn:'ラッピング ON',wrapOff:'ラッピング OFF',goal:n=>n+' がゴール！',
  rc:(c,l,m,d)=>c+'（'+l+' µm・'+m+'・CPU '+d+'）',win:'優勝！',place:r=>r+' 位',time:s=>`タイム ${s} s。`,timeout:d=>`時間切れ。${d} µm 地点まで進みました。`,
- theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
+ theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,
+ lbT:'このコースの記録',lbNew:'自己最高',lbRank:(r,n)=>r+' 位 / '+n+' 件',
+ lbNone:'まだ記録がありません',lbMine:'あなた',lbCond:(m,d)=>m+'・CPU '+d,
+ lbKept:'この端末に上位100件まで保存されます',up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
  stats:(h,k,f)=>`命中 ${h}・被弾 ${k}・場外 ${f}`,
  wIn:x=>'狭小で加速中 ×'+x,wOut:x=>'広い場所では減速 ×'+x+'（Shiftで解除）',wOutFree:'広い場所でも減速なし — 前極のべん毛は通常の遊泳でも巻いている',wOffIn:'Shift でONにすると加速',wOff:'Shift で切替',timeup:n=>'タイムアップまで '+n+' 秒'
 },
@@ -351,7 +355,10 @@ en:{
  phNone:'Nobody ahead. The phage found no host and drifted away',abxNone:c=>c+': nobody in range',abxZero:(c,n)=>c+': no effect on the '+n+' in range',abxHit:(c,n)=>c+': hit '+n,
  fell:'Out of bounds! Restarting a little further back',scIn:g=>'Shortcut: viscous, but path ×'+g,wrapOn:'Wrap ON',wrapOff:'Wrap OFF',goal:n=>n+' finished!',
  rc:(c,l,m,d)=>c+' ('+l+' µm · '+m+' · CPU '+d+')',win:'You win!',place:r=>ord(r)+' place',time:s=>`Time ${s} s.`,timeout:d=>`Time up. You reached ${d} µm.`,
- theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
+ theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,
+ lbT:'Times on this course',lbNew:'personal best',lbRank:(r,n)=>ord(r)+' of '+n,
+ lbNone:'No times yet',lbMine:'you',lbCond:(m,d)=>m+' · CPU '+d,
+ lbKept:'The best 100 are kept on this device',up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
  stats:(h,k,f)=>`hits ${h} · taken ${k} · falls ${f}`,
  wIn:x=>'boosting in narrow ×'+x,wOut:x=>'slower in the open ×'+x+' (Shift to release)',wOutFree:'no penalty in the open — its leading flagellum wraps during normal swimming too',wOffIn:'Press Shift to boost here',wOff:'Shift to toggle',timeup:n=>'Time up in '+n+' s'
 }};
@@ -777,6 +784,36 @@ function toMenu(){
   state='menu';$('menu').classList.remove('hidden');$('blurb').classList.remove('hidden');
   $('hud').classList.add('hidden');$('result').classList.add('hidden');refreshMenu();
 }
+/* ---- lap records, kept on this device only ----
+   One table per course, mode and CPU setting, because those change the times
+   completely. Only finished races count, and only the best 100 are kept. */
+const LB_KEY='br3d-times';
+function lbLoad(){try{return JSON.parse(localStorage.getItem(LB_KEY))||{};}catch(e){return {};}}
+function lbSave(o){try{localStorage.setItem(LB_KEY,JSON.stringify(o));}catch(e){}}
+const lbBucket=()=>COURSES[courseIdx].id+'|'+(modeIdx===0?'battle':'measured')+'|'+diffIdx;
+function lbAdd(time,spAb){
+  const all=lbLoad(),k=lbBucket(),list=all[k]||[];
+  const row={t:+time.toFixed(2),s:spAb,d:Date.now(),me:1};
+  for(const r of list)delete r.me;                 // only the newest run is "you"
+  list.push(row);
+  list.sort((a,b)=>a.t-b.t);
+  const rank=list.indexOf(row)+1;
+  all[k]=list.slice(0,100);
+  lbSave(all);
+  return {rank:rank,n:list.length,kept:rank<=100,list:all[k]};
+}
+function lbTable(res){
+  const rows=res.list.slice(0,8).map((r,i)=>
+    `<tr class="${r.me?'me':''}"><td>${i+1}</td>
+      <td><span class="nm">${r.s}</span>${r.me?'<span class="you">'+t('lbMine')+'</span>':''}</td>
+      <td class="num">${r.t.toFixed(2)} s</td></tr>`).join('');
+  const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
+  return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${
+    t('lbCond',moT(modeIdx,'name'),t('df')[diffIdx][0])}</div>
+    <h3 style="margin:2px 0 6px">${head}${res.rank===1?'　★ '+t('lbNew'):''}</h3>
+    <table>${rows}</table>
+    <p class="sum" style="opacity:.7">${t('lbKept')}</p>`;
+}
 function startRace(){
   battle=modeIdx===0;DF=DIFFS[diffIdx];
   gc('race-start/'+SPECIES[meIdx].ab+'/'+COURSES[courseIdx].id,
@@ -1072,6 +1109,7 @@ function finish(){
     +(rank<myTheo?t('up'):rank>myTheo?t('down'):'');
   $('rt').innerHTML=o.map((r,i)=>`<tr class="${r===p?'me':''}"><td>${i+1}</td><td><span class="nm" style="color:${hex(r.sp.color)}">${r.sp.name}</span>${r===p?'<span class="you">YOU</span>':''}</td><td class="h num">${t('stats',r.hits,r.taken,r.falls)}</td><td class="num">${
     r.finish!=null?r.finish.toFixed(2)+' s':clamp(r.dist,0,LEN).toFixed(1)+' µm'}</td></tr>`).join('');
+  $('lb').innerHTML=p.finish!=null?lbTable(lbAdd(p.finish,p.sp.ab)):'';
   $('result').classList.remove('hidden');
 }
 
