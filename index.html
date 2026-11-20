@@ -169,6 +169,19 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <div><h2 id="t_hco"></h2><div id="courses" class="row"></div></div>
   <div><h2 id="t_hmo"></h2><div id="modes" class="row"></div></div>
   <div><h2 id="t_hdf"></h2><div id="diffs" class="row"></div></div>
+  <div><h2 id="t_hon"></h2>
+    <div id="online">
+      <div style="display:flex;gap:8px">
+        <input id="roomCode" maxlength="6" autocapitalize="characters"
+          style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+                 background:rgba(255,255,255,.04);color:var(--ink);font:inherit;text-transform:uppercase">
+        <button id="roomBtn" style="padding:10px 16px;border-radius:10px;border:1px solid var(--line);
+          background:rgba(255,255,255,.06);color:var(--ink);font:inherit;font-weight:700"></button>
+      </div>
+      <p class="legend" id="t_onhint"></p>
+      <div id="lobby" class="hidden"></div>
+    </div>
+  </div>
   <div><h2 id="t_hnm"></h2>
     <input id="pname" maxlength="12" autocomplete="nickname"
       style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
@@ -335,7 +348,14 @@ ja:{
  fell:'場外！少し手前からやり直し',scIn:g=>'近道へ：粘性ありだが道のり ×'+g,wrapOn:'ラッピング ON',wrapOff:'ラッピング OFF',goal:n=>n+' がゴール！',
  rc:(c,l,m,d)=>c+'（'+l+' µm・'+m+'・CPU '+d+'）',win:'優勝！',place:r=>r+' 位',time:s=>`タイム ${s} s。`,timeout:d=>`時間切れ。${d} µm 地点まで進みました。`,
  theo:(f,m,n)=>`<br>何もせず中央をまっすぐ進んだ場合の本命は ${f}、${m} は ${n} 番手。`,
- lbT:'このコースの記録',lbNew:'自己最高',lbRank:(r,n)=>r+' 位 / '+n+' 件',
+ lbT:'このコースの記録',lbNew:'New record!',
+ onH:'オンライン対戦',onRoom:'あいことば',onJoin:'部屋に入る',onLeave:'部屋を出る',
+ onConn:'つないでいます…',onIn:n=>'部屋にいる人（'+n+'）',onReady:'準備できた',onUnready:'待つ',
+ onStart:'全員でスタート',onHostOnly:'ホストが始めるのを待っています',
+ onHost:'ホスト',onYou:'あなた',onTaken:'その菌は誰かが使っています',
+ onLost:'接続が切れました',onNeed:'あいことばを入れてください',
+ onHint:'同じあいことばを入れた人どうしで走れます。最大8人。空いた枠は CPU が入ります',
+ onSet:'コースと条件はホストが決めます',onRes:'オンラインの結果',lbRank:(r,n)=>r+' 位 / '+n+' 件',
  lbNone:'まだ記録がありません',lbMine:'あなた',lbCond:(m,d)=>m+'・CPU '+d,
  lbKept:'この端末に上位100件まで保存されます',
  nameH:'プレイヤー名',namePh:'名前（12文字まで）',nameNote:'記録に残ります。空欄なら「名無し」',anon:'名無し',
@@ -366,7 +386,14 @@ en:{
  fell:'Out of bounds! Restarting a little further back',scIn:g=>'Shortcut: viscous, but path ×'+g,wrapOn:'Wrap ON',wrapOff:'Wrap OFF',goal:n=>n+' finished!',
  rc:(c,l,m,d)=>c+' ('+l+' µm · '+m+' · CPU '+d+')',win:'You win!',place:r=>ord(r)+' place',time:s=>`Time ${s} s.`,timeout:d=>`Time up. You reached ${d} µm.`,
  theo:(f,m,n)=>`<br>Driving straight down the middle with no items, the favourite is ${f}; ${m} would be ${ord(n)}.`,
- lbT:'Times on this course',lbNew:'personal best',lbRank:(r,n)=>ord(r)+' of '+n,
+ lbT:'Times on this course',lbNew:'New record!',
+ onH:'Online race',onRoom:'room word',onJoin:'Join room',onLeave:'Leave',
+ onConn:'connecting…',onIn:n=>'In this room ('+n+')',onReady:'Ready',onUnready:'Wait',
+ onStart:'Start for everyone',onHostOnly:'Waiting for the host to start',
+ onHost:'host',onYou:'you',onTaken:'Someone already has that cell',
+ onLost:'Connection lost',onNeed:'Type a room word first',
+ onHint:'Anyone who types the same word races with you. Up to eight; CPUs fill the rest',
+ onSet:'The host picks the course and the conditions',onRes:'Online result',lbRank:(r,n)=>ord(r)+' of '+n,
  lbNone:'No times yet',lbMine:'you',lbCond:(m,d)=>m+' · CPU '+d,
  lbKept:'The best 100 are kept on this device',
  nameH:'Player name',namePh:'name (up to 12)',nameNote:'Shown with your times. Blank means "anon"',anon:'anon',
@@ -756,6 +783,9 @@ const cleanName=n=>String(n==null?'':n).replace(/[\u0000-\u001f<>&"']/g,'').trim
 const myName=()=>cleanName(pname)||t('anon');
 function renderMenu(){
   document.documentElement.lang=lang;document.title=t('title');
+  $('t_hon').textContent=t('onH');$('t_onhint').textContent=t('onHint');
+  $('roomCode').placeholder=t('onRoom');
+  renderLobby();
   $('t_hnm').textContent=t('nameH');$('t_nmnote').textContent=t('nameNote');
   $('pname').placeholder=t('namePh');$('pname').value=pname;
   for(const[id,k]of[['t_title','title'],['t_lead','lead'],['t_hsp','hSp'],['t_hco','hCo'],['t_hmo','hMo'],['t_hdf','hDf'],['go','go'],['t_keys','keys'],['t_src','src'],
@@ -775,10 +805,16 @@ function refreshMenu(){
   document.querySelectorAll('.co').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i==={c:courseIdx,m:modeIdx,d:diffIdx}[b.dataset.g]));
   setPreview(SPECIES[meIdx]);
 }
-$('species').addEventListener('click',e=>{const b=e.target.closest('.sp');if(b){meIdx=+b.dataset.i;refreshMenu();}});
+$('species').addEventListener('click',e=>{const b=e.target.closest('.sp');if(b){meIdx=+b.dataset.i;refreshMenu();
+  if(NET.on)netSend({t:'sp',sp:SPECIES[meIdx].ab});}});
+$('roomBtn').addEventListener('click',()=>{
+  if(NET.on)netLeave();else netJoin($('roomCode').value);});
+$('roomCode').addEventListener('keydown',e=>{if(e.key==='Enter'&&!NET.on)netJoin(e.target.value);});
 $('pname').addEventListener('input',e=>{pname=cleanName(e.target.value);
   try{localStorage.setItem('br3d-name',pname);}catch(_){}} );
-$('courses').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){courseIdx=+b.dataset.i;refreshMenu();}});
+$('courses').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){courseIdx=+b.dataset.i;refreshMenu();netSet();}});
+function netSet(){if(NET.on&&NET.host)netSend({t:'set',course:COURSES[courseIdx].id,
+  mode:modeIdx===0?'battle':'measured',diff:diffIdx});}
 $('modes').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){modeIdx=+b.dataset.i;refreshMenu();}});
 $('diffs').addEventListener('click',e=>{const b=e.target.closest('.co');if(b){diffIdx=+b.dataset.i;refreshMenu();}});
 $('go').addEventListener('click',()=>startRace());
@@ -803,10 +839,146 @@ const me=()=>racers[meIdx];
 
 function toMenu(){
   if(state==='run'||state==='count')gc('race-quit');
+  if(NET.on&&(state==='race'||state==='count'||state==='done'))netSend({t:'back'});
   state='menu';$('menu').classList.remove('hidden');$('blurb').classList.remove('hidden');
   $('hud').classList.add('hidden');$('result').classList.add('hidden');refreshMenu();
 }
 const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ================= online races =================
+   Each room is one Durable Object. Every client works out its own cell and
+   sends where it is ten times a second; the others are drawn from what arrives.
+   Hits are reported by whoever lands them, so this only works among people
+   who are not trying to cheat. */
+const NET={ws:null,on:false,inRoom:false,id:null,host:false,code:'',players:[],
+  byId:{},rem:{},last:0,res:null};
+function netUrl(code){
+  return SCORE_API.replace(/^http/,'ws')+'/room/'+encodeURIComponent(code);
+}
+function netJoin(code){
+  code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  if(code.length<3){alert(t('onNeed'));return;}
+  netLeave();
+  NET.code=code;NET.on=true;NET.players=[];NET.res=null;
+  renderLobby(t('onConn'));
+  const ws=new WebSocket(netUrl(code));
+  NET.ws=ws;
+  ws.onopen=()=>{NET.inRoom=true;
+    ws.send(JSON.stringify({t:'join',name:myName(),sp:SPECIES[meIdx].ab}));
+    refreshMenu();};
+  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data);}catch(e){return;}netOn(m);};
+  ws.onclose=()=>{if(NET.on){NET.on=false;NET.inRoom=false;renderLobby(t('onLost'));refreshMenu();}};
+  ws.onerror=()=>{};
+}
+function netLeave(){
+  NET.on=false;NET.inRoom=false;NET.players=[];NET.byId={};NET.rem={};
+  if(NET.ws){try{NET.ws.close();}catch(e){}NET.ws=null;}
+  renderLobby('');refreshMenu();
+}
+const netSend=o=>{if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(o));};
+function netOn(m){
+  if(m.t==='you'){NET.id=m.id;NET.host=!!m.host;}
+  else if(m.t==='room'){
+    NET.players=m.players;NET.host=(m.players.find(p=>p.id===NET.id)||{}).host||false;
+    NET.byId={};for(const p of m.players)NET.byId[p.id]=p;
+    // the room's own cell choice wins over the menu
+    const mine=NET.byId[NET.id];
+    if(mine&&mine.sp){const i=SPECIES.findIndex(s=>s.ab===mine.sp);if(i>=0&&i!==meIdx){meIdx=i;refreshMenu();}}
+    if(m.set){courseIdx=Math.max(0,COURSES.findIndex(c=>c.id===m.set.course));
+      modeIdx=m.set.mode==='battle'?0:1;diffIdx=m.set.diff;refreshMenu();}
+    renderLobby();
+  }
+  else if(m.t==='go'){
+    if(m.set){courseIdx=Math.max(0,COURSES.findIndex(c=>c.id===m.set.course));
+      modeIdx=m.set.mode==='battle'?0:1;diffIdx=m.set.diff;}
+    NET.byId={};for(const p of (m.players||[]))NET.byId[p.id]=p;
+    NET.rem={};
+    for(const p of (m.players||[])){
+      if(p.id===NET.id||!p.sp)continue;
+      const i=SPECIES.findIndex(s=>s.ab===p.sp);
+      if(i>=0)NET.rem[i]={d:0,x:0,td:0,tx:0,name:p.name,id:p.id};
+    }
+    startRace();
+  }
+  else if(m.t==='s'){
+    const p=NET.byId[m.id];if(!p||!p.sp)return;
+    const i=SPECIES.findIndex(s=>s.ab===p.sp);
+    const r=NET.rem[i];if(!r)return;
+    r.td=m.d;r.tx=m.x;r.f=m.f;
+  }
+  else if(m.t==='hit'){
+    const to=NET.byId[m.to];
+    if(to&&to.id===NET.id){
+      const from=NET.byId[m.from];
+      const si=from&&from.sp?SPECIES.findIndex(s=>s.ab===from.sp):-1;
+      strike(me(),si>=0?racers[si]:me(),m.k==='phg'||m.k==='bde'?m.k:'abx',+m.k>=0?+m.k:0);
+    }
+  }
+  else if(m.t==='fin'){const p=NET.byId[m.id];if(p)p.fin=m.time;}
+  else if(m.t==='res'){NET.res=m.players;showOnlineResult();}
+  else if(m.t==='left'){
+    const p=NET.byId[m.id];
+    if(p&&p.sp){const i=SPECIES.findIndex(s=>s.ab===p.sp);delete NET.rem[i];}
+    delete NET.byId[m.id];
+  }
+}
+const isRemote=r=>NET.on&&NET.rem[r.i]!=null;
+function netTick(dt){
+  if(!NET.on)return;
+  // our own position, ten times a second
+  const now=performance.now();
+  if(now-NET.last>100&&(state==='race'||state==='count')){
+    NET.last=now;const p=me();
+    netSend({t:'s',d:+p.dist.toFixed(2),x:+rx(p).toFixed(2),
+      f:(p.boostT>0?1:0)|(p.slowT>0?2:0)|(p.spinT>0?4:0)|(p.shieldT>0?8:0)|(p.fallT>0?16:0)});
+  }
+  // the others glide towards where they said they were
+  for(const k in NET.rem){
+    const q=NET.rem[k],r=racers[k];if(!r)continue;
+    q.d+=(q.td-q.d)*Math.min(1,dt*9);
+    q.x+=(q.tx-q.x)*Math.min(1,dt*9);
+    r.dist=q.d;
+    r.boostT=(q.f&1)?.2:0;r.slowT=(q.f&2)?.2:0;r.spinT=(q.f&4)?.2:0;
+    r.shieldT=(q.f&8)?.2:0;
+  }
+}
+function renderLobby(msg){
+  const box=$('lobby');if(!box)return;
+  $('roomBtn').textContent=NET.on?t('onLeave'):t('onJoin');
+  if(!NET.on&&!msg){box.classList.add('hidden');box.innerHTML='';return;}
+  box.classList.remove('hidden');
+  if(msg&&!NET.players.length){box.innerHTML='<p class="legend">'+msg+'</p>';return;}
+  const rows=NET.players.map(p=>{
+    const sp=SPECIES.find(s=>s.ab===p.sp);
+    return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0">
+      <i style="width:9px;height:9px;border-radius:3px;background:${sp?hex(sp.color):'#666'}"></i>
+      <b>${esc(p.name||t('anon'))}</b>
+      <small style="color:var(--dim)">${p.sp||'—'}${p.host?' · '+t('onHost'):''}${
+        p.id===NET.id?' · '+t('onYou'):''}</small>
+      <span style="margin-left:auto;color:${p.ready?'var(--ok,#9dffd9)':'var(--dim)'}">${
+        p.ready?'✓':'…'}</span></div>`;}).join('');
+  const meP=NET.byId[NET.id]||{};
+  box.innerHTML=`<div class="legend">${t('onIn',NET.players.length)}　${NET.code}</div>${rows}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="rdyBtn" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);
+        background:rgba(255,255,255,.06);color:var(--ink);font:inherit;font-weight:700">${
+        meP.ready?t('onUnready'):t('onReady')}</button>
+      ${NET.host?`<button id="goBtn" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);
+        background:var(--gold);color:#1a1405;font:inherit;font-weight:700">${t('onStart')}</button>`
+      :`<span class="legend" style="flex:1">${t('onHostOnly')}</span>`}
+    </div><p class="legend">${t('onSet')}</p>`;
+  const rb=$('rdyBtn');if(rb)rb.onclick=()=>netSend({t:'ready',v:!meP.ready});
+  const gb=$('goBtn');if(gb)gb.onclick=()=>netSend({t:'start'});
+}
+function showOnlineResult(){
+  if(!NET.res)return;
+  const rows=NET.res.slice().sort((a,b)=>(a.fin??1e9)-(b.fin??1e9)).map((p,i)=>
+    `<tr class="${p.id===NET.id?'me':''}"><td>${i+1}</td>
+      <td><span class="nm">${esc(p.name||t('anon'))}</span> <small style="opacity:.6">${p.sp||''}</small></td>
+      <td class="num">${p.fin!=null?p.fin.toFixed(2)+' s':'—'}</td></tr>`).join('');
+  const box=$('lbg');if(box)box.innerHTML=`<div class="eyebrow" style="margin-top:14px">${t('onRes')}</div>
+    <table>${rows}</table>`;
+}
+
 /* ---- the shared table, held by a small Cloudflare Worker ---- */
 const SCORE_API='https://divine-shape-bbf9.naoki-a-uemura.workers.dev';
 async function lbPost(time,spAb){
@@ -861,7 +1033,7 @@ function lbTable(res){
   const head=res.kept?t('lbRank',res.rank,res.n):t('lbRank','100+',res.n);
   return `<div class="eyebrow" style="margin-top:14px">${t('lbT')}　${t('lbLocal')}　${
     t('lbCond',moT(modeIdx,'name'),t('df')[diffIdx][0])}</div>
-    <h3 style="margin:2px 0 6px">${head}${res.rank===1?'　★ '+t('lbNew'):''}</h3>
+    <h3 style="margin:2px 0 6px">${head}${res.rank===1?' <span style="color:var(--gold);font-size:13px;letter-spacing:.1em">'+t('lbNew')+'</span>':''}</h3>
     <table>${rows}</table>
     <p class="sum" style="opacity:.7">${t('lbKept')}</p>`;
 }
@@ -873,7 +1045,7 @@ function startRace(){
   gc('diff/'+['easy','normal','hard','extra'][diffIdx]);
   buildCourse(COURSES[courseIdx]);
   for(const p of phages)scene.remove(p.g);for(const w of waves)scene.remove(w.m);phages=[];waves=[];
-  const slots=[0,1,2,3,4,5,6,7].sort(()=>Math.random()-.5);
+  const slots=NET.on?[0,1,2,3,4,5,6,7]:[0,1,2,3,4,5,6,7].sort(()=>Math.random()-.5);
   racers.forEach((r,k)=>{const s=slots[k];
     Object.assign(r,{dist:-1.5-Math.floor(s/4)*4.5,lat:[-4.5,-1.5,1.5,4.5][s%4],v:0,finish:null,item:null,itemT:0,tries:0,q:Math.random(),
       br:null,blat:0,inCh:false,fallT:0,falls:0,
@@ -945,6 +1117,12 @@ function giveItem(r){
   if(r===me()){showItem();say(t('got',itemInfo(r.item).name),1.1);}
 }
 function strike(tg,src,kind,k){ // returns true if it had an effect
+  // When we are the one landing it on somebody else's cell, tell them, so the
+  // slowdown happens on their screen too.
+  if(NET.on&&src===me()&&isRemote(tg)){
+    const q=NET.rem[tg.i];
+    if(q&&q.id)netSend({t:'hit',to:q.id,k:(kind==='phg'||kind==='bde')?kind:String(k)});
+  }
   if(tg.finish!=null||tg.fallT>0||(tg.immT>0&&kind!=='bde'))return false;
   const p=me();
   if(tg.shieldT>0){tg.shieldT=0;fx(tg,t('bioFx'),'#9dffd9');if(tg===p)say(t('bioSay'));return false;}
@@ -1064,6 +1242,7 @@ function stepRace(dt){
   const lead=racers.reduce((a,r)=>r.finish==null?Math.max(a,r.dist):a,-99);
   for(const r of racers){
     const done=r.finish!=null;
+    if(isRemote(r))continue;            // driven by what that player sends
     if(r.fallT>0){if((r.fallT-=dt)<=0)respawn(r);continue;}
     const steer=r===p?((keys.right?1:0)-(keys.left?1:0)):0;
     if(r.br){ // inside a shortcut
@@ -1111,6 +1290,7 @@ function stepRace(dt){
     r.v+=(speedOf(r.sp,e)*mult-r.v)*Math.min(1,dt*5);
     const nd=r.dist+r.v*dt*TS*(r.br?r.br.gain:1);
     if(!done&&nd>=LEN){r.finish=clock-(nd-LEN)/Math.max(r.v,.01);
+      if(r===p&&NET.on)netSend({t:'fin',time:+r.finish.toFixed(2)});
       if(firstFin==null){firstFin=clock;endAt=DEADLINE;if(r!==p)say(t('goal',nm(r)));}}
     r.dist=nd;
     if(r.br&&r.dist>=r.br.b){r.lat=clamp(r.br.xs(r.br.b)+r.blat-cx(r.br.b),-EDGE,EDGE);r.tl=r.lat;r.br=null;}
@@ -1183,11 +1363,12 @@ function frame(now){
     if(count<=0)state='race';
   }else if($('center').textContent){ if((count-=dt)<-.7)$('center').textContent=''; }
   if(state==='race')stepRace(dt);
+  netTick(dt);
   if(msgT>0&&(msgT-=dt)<=0)$('msg').classList.remove('on');
 
   const p=me(),o=order(),moving=state!=='count';
   for(const r of racers){
-    const g=r.m.g,x=rx(r),z=-r.dist;
+    const g=r.m.g,x=isRemote(r)?NET.rem[r.i].x:rx(r),z=-r.dist;
     const y=r.fallT>0?-(.8-r.fallT)*9:Math.sin(tAll*2+r.ph)*.06;
     g.position.set(x,y,z);
     spinModel(r.m,moving?6+r.v*.8:5,dt);
