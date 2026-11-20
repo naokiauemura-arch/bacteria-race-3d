@@ -1,7 +1,7 @@
 {
   // Cloudflare Worker for Bacteria Race 3D:
   // the shared time table (KV) and the online race rooms (Durable Objects).
-  "name": "bacteria-race",
+  "name": "divine-shape-bbf9",
   "main": "worker/index.js",
   "compatibility_date": "2026-01-01",
   "kv_namespaces": [
