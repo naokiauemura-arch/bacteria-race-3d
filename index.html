@@ -928,7 +928,7 @@ const me=()=>racers[meIdx];
    along while the walls close in to one cell's width. It is skippable, and it
    only plays once per visit. */
 let introT=0,introG=null,introWall=null,introCell=null,introDust=null,introCap=-1,introOn=false;
-const CAPS=[[.5,3.4,'i1'],[3.6,6.6,'i2'],[6.8,9.4,'i3']];
+const CAPS=[[.5,3.4,'i1'],[3.6,6.6,'i2'],[6.8,8.3,'i3']];
 /* the lane, seen from the side. GAP is the half-width in µm-ish units: wide
    enough to swim freely, then down to about one cell. */
 const G0=3.4,G1=.8,ISP0=3.3,ISP1=.3,WT=26;
@@ -944,7 +944,8 @@ function buildIntro(){
   introG=new THREE.Group();
   const N=320,pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*34;
-    pos[i*3+1]=PVY+(Math.random()-.5)*9;pos[i*3+2]=-6+Math.random()*12;}
+    // kept within the walls' own depth, so none of it floats in front of them
+    pos[i*3+1]=PVY+(Math.random()-.5)*9;pos[i*3+2]=-3+Math.random()*6;}
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   introDust=new THREE.Points(geo,new THREE.PointsMaterial(
@@ -1009,7 +1010,8 @@ function stepIntro(dt){
   look.set(.6,PVY,0);camera.lookAt(look);
   scene.fog.density=.004;
   scene.background.set(0x050d16);scene.fog.color.set(0x050d16);
-  $('intro').style.setProperty('--veil',T>7.9?Math.min(.62,(T-7.9)*.9):0);
+  // fade the lane right down before the title, or the letters land on the cell
+  $('intro').style.setProperty('--veil',T>8?Math.min(.9,(T-8)*.95):0);
   // captions, then the title
   let want=-1;
   for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
@@ -1019,7 +1021,7 @@ function stepIntro(dt){
     else{c.classList.remove('on');c.textContent=t(CAPS[want][2]);
       requestAnimationFrame(()=>c.classList.add('on'));}
   }
-  $('ititle').classList.toggle('on',T>8.2);
+  $('ititle').classList.toggle('on',T>8.6);
   renderer.render(scene,camera);
   if(T>11)endIntro(false);
 }
