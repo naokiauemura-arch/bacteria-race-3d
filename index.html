@@ -998,6 +998,7 @@ function renderTitle(){
   $('mCpu').innerHTML='<b>'+t('mCpu')+'</b><small>'+t('mCpuSub')+'</small>';
   $('mOn').innerHTML='<b>'+t('mOn')+'</b><small>'+t('mOnSub')+'</small>';
   $('replayIntro').textContent=t('replay');
+  $('replayIntro').classList.toggle('hidden',location.search.indexOf('intro=1')<0);
   document.querySelectorAll('#lang2 button').forEach(
     b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
 }
@@ -1666,10 +1667,17 @@ function frame(now){
 renderMenu();refreshMenu();
 // the opening plays once a visit; coming back from a race goes straight to the
 // start screen. ?nointro= skips it outright, which the tests use.
-let seen=false;try{seen=sessionStorage.getItem('br3d-seen')==='1';}catch(e){}
-if(seen||location.search.indexOf('nointro')>=0)toTitle();else playIntro();
+// The opening is off while it is being reworked: ?intro=1 plays it.
+if(location.search.indexOf('intro=1')>=0)playIntro();else toTitle();
 if(location.search.indexOf('dbg')>=0)window.__br3d={NET:NET,racers:()=>racers,
-  state:()=>state,me:()=>meIdx,title:toTitle,intro:playIntro,pick:pickMode};
+  state:()=>state,me:()=>meIdx,title:toTitle,intro:playIntro,pick:pickMode,
+  // step the opening by hand: a hidden tab throttles rAF, so this is the only
+  // way to look at a given moment of it
+  seek:(T)=>{if(state!=='intro')playIntro();introT=T;introCap=-1;stepIntro(0);
+    return {t:introT,cam:camera.position.toArray().map(n=>+n.toFixed(2)),
+      wall:introWall?+introWall[1].position.x.toFixed(2):null,
+      cell:preview?preview.g.position.toArray().map(n=>+n.toFixed(2)):null,
+      cap:$('icap').textContent};}};
 requestAnimationFrame(frame);
 })();
 </script>
