@@ -40,7 +40,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   opacity:0;transform:translateY(8px);transition:opacity .7s,transform .7s;
   text-shadow:0 2px 24px #000,0 0 60px #000,0 0 90px #000}
 #icap.on{opacity:1;transform:none}
-#ititle{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) scale(.97);
+#ititle{position:absolute;left:0;right:0;top:27%;transform:translateY(-50%) scale(.97);
   font-size:clamp(30px,7vw,60px);opacity:0;transition:opacity 1s,transform 1s;
   text-shadow:0 4px 40px #000}
 #ititle.on{transform:translateY(-50%);opacity:1}
@@ -1011,7 +1011,7 @@ function stepIntro(dt){
   scene.fog.density=.004;
   scene.background.set(0x050d16);scene.fog.color.set(0x050d16);
   // fade the lane right down before the title, or the letters land on the cell
-  $('intro').style.setProperty('--veil',T>8?Math.min(.9,(T-8)*.95):0);
+  $('intro').style.setProperty('--veil',T>8?Math.min(.5,(T-8)*.55):0);
   // captions, then the title
   let want=-1;
   for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
