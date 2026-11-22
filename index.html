@@ -31,14 +31,20 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---- opening ---- */
 #intro{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:10px;text-align:center;pointer-events:none;padding:20px}
-#icap{font-size:clamp(15px,2.6vw,22px);line-height:1.7;color:var(--ink);max-width:22em;
+  justify-content:flex-end;gap:10px;text-align:center;pointer-events:none;
+  padding:0 20px 11vh;--veil:0}
+#intro::before{content:"";position:absolute;inset:0;background:#050d16;
+  opacity:var(--veil);transition:opacity .4s}
+#intro>*{position:relative}
+#icap{font-size:clamp(15px,2.6vw,22px);line-height:1.7;color:var(--ink);max-width:24em;
   opacity:0;transform:translateY(8px);transition:opacity .7s,transform .7s;
-  text-shadow:0 2px 24px #000,0 0 60px #000}
+  text-shadow:0 2px 24px #000,0 0 60px #000,0 0 90px #000}
 #icap.on{opacity:1;transform:none}
-#ititle{font-size:clamp(30px,7vw,60px);opacity:0;transform:scale(.97);
-  transition:opacity 1s,transform 1s;text-shadow:0 4px 40px #000}
-#ititle.on{opacity:1;transform:none}
+#ititle{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) scale(.97);
+  font-size:clamp(30px,7vw,60px);opacity:0;transition:opacity 1s,transform 1s;
+  text-shadow:0 4px 40px #000}
+#ititle.on{transform:translateY(-50%);opacity:1}
+
 #skip{position:fixed;right:22px;bottom:20px;pointer-events:auto;padding:8px 16px;
   border:1px solid var(--line);border-radius:999px;background:rgba(0,0,0,.35);
   color:var(--dim);font:inherit;font-size:12px;letter-spacing:.06em}
@@ -921,28 +927,44 @@ const me=()=>racers[meIdx];
    The opening says in pictures what the paper says in words: a cell swimming
    along while the walls close in to one cell's width. It is skippable, and it
    only plays once per visit. */
-let introT=0,introG=null,introWall=null,introCap=-1,introOn=false;
-const CAPS=[[.4,3.1,'i1'],[3.3,6.0,'i2'],[6.2,8.4,'i3']];
-
+let introT=0,introG=null,introWall=null,introCell=null,introDust=null,introCap=-1,introOn=false;
+const CAPS=[[.5,3.4,'i1'],[3.6,6.6,'i2'],[6.8,9.4,'i3']];
+/* the lane, seen from the side. GAP is the half-width in µm-ish units: wide
+   enough to swim freely, then down to about one cell. */
+const G0=3.4,G1=.8,ISP0=3.3,ISP1=.3;
+const sstep=x=>{x=Math.min(1,Math.max(0,x));return x*x*(3-2*x);};
+const introGap=T=>G0-(G0-G1)*sstep((T-2.9)/3.1);
+const introSpeed=T=>ISP1+(ISP0-ISP1)*Math.pow((introGap(T)-G1)/(G0-G1),1.25);
+function introX(T){                       // distance covered, integrated
+  let x=-9.2,s=0,n=Math.max(1,Math.ceil(T/.02));
+  for(let i=0;i<n;i++){const h=T/n;x+=introSpeed(s+h/2)*h;s+=h;}
+  return x;
+}
 function buildIntro(){
   introG=new THREE.Group();
-  const N=460,pos=new Float32Array(N*3);
-  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*30;
-    pos[i*3+1]=(Math.random()-.5)*16;pos[i*3+2]=-Math.random()*95;}
+  const N=320,pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*34;
+    pos[i*3+1]=PVY+(Math.random()-.5)*9;pos[i*3+2]=-6+Math.random()*12;}
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  introG.add(new THREE.Points(geo,new THREE.PointsMaterial(
-    {color:0x9fd8ff,size:.1,transparent:true,opacity:.45,depthWrite:false})));
-  const wm=new THREE.MeshStandardMaterial({color:0x1b3a4a,roughness:.95,metalness:0});
-  introWall=[new THREE.Mesh(new THREE.BoxGeometry(.6,7,130),wm),
-             new THREE.Mesh(new THREE.BoxGeometry(.6,7,130),wm)];
-  introWall[0].position.set(-11,0,-52);introWall[1].position.set(11,0,-52);
+  introDust=new THREE.Points(geo,new THREE.PointsMaterial(
+    {color:0x9fd8ff,size:.07,transparent:true,opacity:.4,depthWrite:false}));
+  introG.add(introDust);
+  // walls above and below, long in x so they run off both edges of the frame
+  const wm=new THREE.MeshStandardMaterial({color:0x21424f,roughness:.95,metalness:0});
+  introWall=[new THREE.Mesh(new THREE.BoxGeometry(64,.55,7),wm),
+             new THREE.Mesh(new THREE.BoxGeometry(64,.55,7),wm)];
   introG.add(introWall[0],introWall[1]);
+  // its own cell, so the menu preview keeps its own pose
+  introCell=buildBacterium(SPECIES[1]);
+  introCell.g.rotation.y=-Math.PI/2;          // long axis along x, swimming +x
+  introG.add(introCell.g);
   scene.add(introG);
 }
 function playIntro(){
   if(!introG)buildIntro();else introG.visible=true;
   introT=0;introCap=-1;introOn=true;state='intro';
+  stepIntro(0);
   $('intro').classList.remove('hidden');$('title').classList.add('hidden');
   $('menu').classList.add('hidden');$('blurb').classList.add('hidden');
   $('icap').classList.remove('on');$('ititle').classList.remove('on');
@@ -952,8 +974,9 @@ function endIntro(skipped){
   if(!introOn)return;
   introOn=false;
   if(introG)introG.visible=false;
-  if(preview){preview.g.rotation.set(0,0,0);preview.g.position.set(0,PVY,0);}
   scene.fog.density=.004;
+  $('intro').style.setProperty('--veil',0);
+  $('ititle').classList.remove('on');
   $('intro').classList.add('hidden');
   try{sessionStorage.setItem('br3d-seen','1');}catch(e){}
   if(skipped)gc('intro/skip','Opening skipped');
@@ -961,16 +984,28 @@ function endIntro(skipped){
 }
 function stepIntro(dt){
   introT+=dt;const T=introT;
-  // the cell drifts across the view while the camera closes in
-  if(preview){preview.g.position.set(-.4,Math.sin(T*2.1)*.22,-4.5+Math.min(2.6,T*.34));
-    preview.g.rotation.y=Math.PI*.5;spinModel(preview,15,dt);}
-  // the walls squeeze in from 11 µm to just over one cell wide
-  const k=Math.min(1,Math.max(0,(T-2.6)/3.6)),s=k*k*(3-2*k),w=11-(11-1.25)*s;
-  if(introWall){introWall[0].position.x=-w;introWall[1].position.x=w;}
-  camera.position.set(0,.55+Math.sin(T*.8)*.1,8.4-Math.min(5.6,T*.95));
-  look.set(0,0,-9);camera.lookAt(look);
-  scene.fog.density=.012+s*.016;
+  const gap=introGap(T),x=introX(T);
+  if(introWall){
+    introWall[0].position.set(0,PVY+gap,0);
+    introWall[1].position.set(0,PVY-gap,0);
+  }
+  if(introCell){
+    // it wags less and less as the walls close in — the point of the shot
+    const room=(gap-G1)/(G0-G1);
+    introCell.g.position.set(x,PVY+Math.sin(T*2.6)*.1*room,0);
+    spinModel(introCell,4+introSpeed(T)*3.2,dt);
+    glow.position.set(x,PVY+1.2,3.5);
+  }
+  if(introDust)introDust.position.x=-((T*1.1)%8);
+  // a plain side-on view, far enough back that the whole lane fits whatever
+  // shape the window is, easing in a little as it goes
+  const halfH=Math.tan(31*Math.PI/180),asp=Math.max(.4,camera.aspect);
+  const need=Math.min(26,Math.max(12,10.6/(halfH*asp)));
+  camera.position.set(.6,PVY,need-sstep(T/9)*need*.1);
+  look.set(.6,PVY,0);camera.lookAt(look);
+  scene.fog.density=.004;
   scene.background.set(0x050d16);scene.fog.color.set(0x050d16);
+  $('intro').style.setProperty('--veil',T>7.9?Math.min(.62,(T-7.9)*.9):0);
   // captions, then the title
   let want=-1;
   for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
@@ -980,9 +1015,9 @@ function stepIntro(dt){
     else{c.classList.remove('on');c.textContent=t(CAPS[want][2]);
       requestAnimationFrame(()=>c.classList.add('on'));}
   }
-  if(T>8.5)$('ititle').classList.add('on');
+  $('ititle').classList.toggle('on',T>8.2);
   renderer.render(scene,camera);
-  if(T>10.4)endIntro(false);
+  if(T>11)endIntro(false);
 }
 function toTitle(){
   state='title';
