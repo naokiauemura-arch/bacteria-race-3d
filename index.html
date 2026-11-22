@@ -931,7 +931,7 @@ let introT=0,introG=null,introWall=null,introCell=null,introDust=null,introCap=-
 const CAPS=[[.5,3.4,'i1'],[3.6,6.6,'i2'],[6.8,9.4,'i3']];
 /* the lane, seen from the side. GAP is the half-width in µm-ish units: wide
    enough to swim freely, then down to about one cell. */
-const G0=3.4,G1=.8,ISP0=3.3,ISP1=.3;
+const G0=3.4,G1=.8,ISP0=3.3,ISP1=.3,WT=26;
 const sstep=x=>{x=Math.min(1,Math.max(0,x));return x*x*(3-2*x);};
 const introGap=T=>G0-(G0-G1)*sstep((T-2.9)/3.1);
 const introSpeed=T=>ISP1+(ISP0-ISP1)*Math.pow((introGap(T)-G1)/(G0-G1),1.25);
@@ -951,9 +951,11 @@ function buildIntro(){
     {color:0x9fd8ff,size:.07,transparent:true,opacity:.4,depthWrite:false}));
   introG.add(introDust);
   // walls above and below, long in x so they run off both edges of the frame
-  const wm=new THREE.MeshStandardMaterial({color:0x21424f,roughness:.95,metalness:0});
-  introWall=[new THREE.Mesh(new THREE.BoxGeometry(64,.55,7),wm),
-             new THREE.Mesh(new THREE.BoxGeometry(64,.55,7),wm)];
+  // tall, so that everything outside the channel is wall and the frame reads
+  // as a slit rather than a bar floating in a void
+  const wm=new THREE.MeshStandardMaterial({color:0x17333f,roughness:.95,metalness:0});
+  introWall=[new THREE.Mesh(new THREE.BoxGeometry(64,WT,7),wm),
+             new THREE.Mesh(new THREE.BoxGeometry(64,WT,7),wm)];
   introG.add(introWall[0],introWall[1]);
   // its own cell, so the menu preview keeps its own pose
   introCell=buildBacterium(SPECIES[1]);
@@ -974,6 +976,7 @@ function endIntro(skipped){
   if(!introOn)return;
   introOn=false;
   if(introG)introG.visible=false;
+  if(preview)preview.g.visible=true;
   scene.fog.density=.004;
   $('intro').style.setProperty('--veil',0);
   $('ititle').classList.remove('on');
@@ -985,10 +988,11 @@ function endIntro(skipped){
 function stepIntro(dt){
   introT+=dt;const T=introT;
   const gap=introGap(T),x=introX(T);
-  if(introWall){
-    introWall[0].position.set(0,PVY+gap,0);
-    introWall[1].position.set(0,PVY-gap,0);
+  if(introWall){                       // inner faces sit exactly at ±gap
+    introWall[0].position.set(0,PVY+gap+WT/2,0);
+    introWall[1].position.set(0,PVY-gap-WT/2,0);
   }
+  if(preview)preview.g.visible=false;  // the menu's cell must not sit in shot
   if(introCell){
     // it wags less and less as the walls close in — the point of the shot
     const room=(gap-G1)/(G0-G1);
@@ -1710,8 +1714,8 @@ if(location.search.indexOf('dbg')>=0)window.__br3d={NET:NET,racers:()=>racers,
   // way to look at a given moment of it
   seek:(T)=>{if(state!=='intro')playIntro();introT=T;introCap=-1;stepIntro(0);
     return {t:introT,cam:camera.position.toArray().map(n=>+n.toFixed(2)),
-      wall:introWall?+introWall[1].position.x.toFixed(2):null,
-      cell:preview?preview.g.position.toArray().map(n=>+n.toFixed(2)):null,
+      gap:+introGap(T).toFixed(2),v:+introSpeed(T).toFixed(2),
+      cell:introCell?introCell.g.position.toArray().map(n=>+n.toFixed(2)):null,
       cap:$('icap').textContent};}};
 requestAnimationFrame(frame);
 })();
