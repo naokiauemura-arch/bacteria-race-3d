@@ -959,7 +959,7 @@ function buildIntro(){
   const N=320,pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*34;
     // kept within the walls' own depth, so none of it floats in front of them
-    pos[i*3+1]=PVY+(Math.random()-.5)*9;pos[i*3+2]=-3+Math.random()*6;}
+    pos[i*3+1]=PVY+(Math.random()-.5)*9;pos[i*3+2]=-.8+Math.random()*1.2;}
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   introDust=new THREE.Points(geo,new THREE.PointsMaterial(
@@ -970,13 +970,15 @@ function buildIntro(){
   const wm=new THREE.MeshStandardMaterial({color:0x17333f,roughness:.95,metalness:0});
   introWall=[];
   for(let k=0;k<5;k++){
-    const m=new THREE.Mesh(new THREE.BoxGeometry(64,1,7),wm);
-    introG.add(m);introWall.push(m);
+    // thin, and set back behind the cells: a deep wall's near face projects
+    // over the lane opening and slices the cells in half
+    const m=new THREE.Mesh(new THREE.BoxGeometry(64,1,.6),wm);
+    m.position.z=-.9;introG.add(m);introWall.push(m);
   }
   // the finish line all four are heading for
   const fin=new THREE.Mesh(new THREE.BoxGeometry(.14,4*LS,.3),
     new THREE.MeshBasicMaterial({color:0xe3b24a,transparent:true,opacity:.75}));
-  fin.position.set(IFIN,PVY,0);introG.add(fin);
+  fin.position.set(IFIN,PVY,-.8);introG.add(fin);
   // its own cells, so the menu preview keeps its own pose
   introCell=ILANE.map((si,i)=>{
     const m=buildBacterium(SPECIES[si]);
@@ -1028,12 +1030,12 @@ function stepIntro(dt){
   const gap=introGap(T),room=(gap-G1)/(G0-G1);
   if(introWall){
     // inner faces sit exactly at each lane's ±gap
-    introWall[0].scale.y=WT;introWall[0].position.set(0,laneY(0)+gap+WT/2,0);
+    introWall[0].scale.y=WT;introWall[0].position.set(0,laneY(0)+gap+WT/2,-.9);
     for(let k=1;k<4;k++){               // between lane k-1 and lane k
       introWall[k].scale.y=Math.max(.02,LS-2*gap);
-      introWall[k].position.set(0,(laneY(k-1)+laneY(k))/2,0);
+      introWall[k].position.set(0,(laneY(k-1)+laneY(k))/2,-.9);
     }
-    introWall[4].scale.y=WT;introWall[4].position.set(0,laneY(3)-gap-WT/2,0);
+    introWall[4].scale.y=WT;introWall[4].position.set(0,laneY(3)-gap-WT/2,-.9);
   }
   if(preview)preview.g.visible=false;  // the menu's cell must not sit in shot
   if(introCell)for(let i=0;i<introCell.length;i++){
