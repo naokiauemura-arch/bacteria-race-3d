@@ -36,6 +36,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #intro::before{content:"";position:absolute;inset:0;background:#050d16;
   opacity:var(--veil);transition:opacity .4s}
 #intro>*{position:relative}
+#inames{position:absolute;inset:0;opacity:0;transition:opacity .5s}
+#inames span{position:absolute;left:clamp(10px,3.5vw,42px);transform:translateY(-50%);
+  font-style:italic;font-size:clamp(10px,1.5vw,14px);letter-spacing:.02em;white-space:nowrap;
+  text-shadow:0 1px 10px #000,0 0 24px #000}
 #icap{font-size:clamp(15px,2.6vw,22px);line-height:1.7;color:var(--ink);max-width:24em;
   opacity:0;transform:translateY(8px);transition:opacity .7s,transform .7s;
   text-shadow:0 2px 24px #000,0 0 60px #000,0 0 90px #000}
@@ -199,6 +203,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
 <canvas id="gl"></canvas>
 
 <div id="intro" class="hidden">
+  <div id="inames"></div>
   <p id="icap"></p>
   <h1 id="ititle"></h1>
   <button id="skip"></button>
@@ -928,16 +933,25 @@ const me=()=>racers[meIdx];
    along while the walls close in to one cell's width. It is skippable, and it
    only plays once per visit. */
 let introT=0,introG=null,introWall=null,introCell=null,introDust=null,introCap=-1,introOn=false;
-const CAPS=[[.5,3.4,'i1'],[3.6,6.6,'i2'],[6.8,8.3,'i3']];
-/* the lane, seen from the side. GAP is the half-width in µm-ish units: wide
-   enough to swim freely, then down to about one cell. */
-const G0=3.4,G1=.8,ISP0=3.3,ISP1=.3,WT=26;
+const CAPS=[[.4,2.6,'i1'],[2.8,5.0,'i2'],[5.3,7.4,'i3']];
+/* Four lanes seen from the side, in the order they finish in open liquid.
+   Each cell's pace is its own measured speed from the table above: open
+   water to start with, the narrow-channel value once the walls have closed.
+   So the overtaking is the paper's result, not a flourish. */
+const ILANE=[5,4,0,7];          // V. alginolyticus, V. fischeri, C. jejuni, B. subtilis
+const LS=2.4,G0=1.0,G1=.55,WT=26,IK=16,IX0=-7.6,IFIN=8.4,ICLO=[1.6,4.2];
 const sstep=x=>{x=Math.min(1,Math.max(0,x));return x*x*(3-2*x);};
-const introGap=T=>G0-(G0-G1)*sstep((T-2.9)/3.1);
-const introSpeed=T=>ISP1+(ISP0-ISP1)*Math.pow((introGap(T)-G1)/(G0-G1),1.25);
-function introX(T){                       // distance covered, integrated
-  let x=-9.2,s=0,n=Math.max(1,Math.ceil(T/.02));
-  for(let i=0;i<n;i++){const h=T/n;x+=introSpeed(s+h/2)*h;s+=h;}
+const laneY=i=>PVY+(1.5-i)*LS;
+const introClose=T=>sstep((T-ICLO[0])/(ICLO[1]-ICLO[0]));
+const introGap=T=>G0-(G0-G1)*introClose(T);
+function introSpeed(i,T){
+  const v=SPECIES[ILANE[i]].v,c=introClose(T);
+  return (v[0]*(1-c)+v[2]*c)/IK;          // v[0] open water, v[2] narrow
+}
+function introX(i,T){                      // distance covered, integrated
+  let x=IX0,s=0,n=Math.max(1,Math.ceil(T/.02));
+  for(let k=0;k<n;k++){const h=T/n;x+=introSpeed(i,s+h/2)*h;s+=h;
+    if(x>=IFIN)return IFIN;}
   return x;
 }
 function buildIntro(){
@@ -952,17 +966,40 @@ function buildIntro(){
     {color:0x9fd8ff,size:.07,transparent:true,opacity:.4,depthWrite:false}));
   introG.add(introDust);
   // walls above and below, long in x so they run off both edges of the frame
-  // tall, so that everything outside the channel is wall and the frame reads
-  // as a slit rather than a bar floating in a void
+  // five bars: three between the lanes, two tall ones closing the frame off
   const wm=new THREE.MeshStandardMaterial({color:0x17333f,roughness:.95,metalness:0});
-  introWall=[new THREE.Mesh(new THREE.BoxGeometry(64,WT,7),wm),
-             new THREE.Mesh(new THREE.BoxGeometry(64,WT,7),wm)];
-  introG.add(introWall[0],introWall[1]);
-  // its own cell, so the menu preview keeps its own pose
-  introCell=buildBacterium(SPECIES[1]);
-  introCell.g.rotation.y=-Math.PI/2;          // long axis along x, swimming +x
-  introG.add(introCell.g);
+  introWall=[];
+  for(let k=0;k<5;k++){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(64,1,7),wm);
+    introG.add(m);introWall.push(m);
+  }
+  // the finish line all four are heading for
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(.12,4*LS,7.2),
+    new THREE.MeshBasicMaterial({color:0xe3b24a,transparent:true,opacity:.75}));
+  fin.position.set(IFIN,PVY,0);introG.add(fin);
+  // its own cells, so the menu preview keeps its own pose
+  introCell=ILANE.map((si,i)=>{
+    const m=buildBacterium(SPECIES[si]);
+    m.g.rotation.y=-Math.PI/2;                // long axis along x, swimming +x
+    m.g.position.set(IX0,laneY(i),0);
+    introG.add(m.g);return m;
+  });
   scene.add(introG);
+}
+/* The names ride along at each lane's height, projected from the scene so they
+   line up whatever shape the window is. They come in once the field has moved
+   off the left, so they never sit on a cell. */
+const _pv=new THREE.Vector3();
+function introLabels(T){
+  const box=$('inames');if(!box)return;
+  if(!box.children.length)box.innerHTML=ILANE.map(si=>
+    `<span style="color:${hex(SPECIES[si].color)}">${SPECIES[si].name}</span>`).join('');
+  box.style.opacity=T>4.6?Math.min(1,(T-4.6)*1.2):0;
+  if(box.style.opacity==='0')return;
+  for(let i=0;i<ILANE.length;i++){
+    _pv.set(IX0-.4,laneY(i),0).project(camera);
+    box.children[i].style.top=((1-_pv.y)/2*100).toFixed(2)+'%';
+  }
 }
 function playIntro(){
   if(!introG)buildIntro();else introG.visible=true;
@@ -988,30 +1025,36 @@ function endIntro(skipped){
 }
 function stepIntro(dt){
   introT+=dt;const T=introT;
-  const gap=introGap(T),x=introX(T);
-  if(introWall){                       // inner faces sit exactly at ±gap
-    introWall[0].position.set(0,PVY+gap+WT/2,0);
-    introWall[1].position.set(0,PVY-gap-WT/2,0);
+  const gap=introGap(T),room=(gap-G1)/(G0-G1);
+  if(introWall){
+    // inner faces sit exactly at each lane's ±gap
+    introWall[0].scale.y=WT;introWall[0].position.set(0,laneY(0)+gap+WT/2,0);
+    for(let k=1;k<4;k++){               // between lane k-1 and lane k
+      introWall[k].scale.y=Math.max(.02,LS-2*gap);
+      introWall[k].position.set(0,(laneY(k-1)+laneY(k))/2,0);
+    }
+    introWall[4].scale.y=WT;introWall[4].position.set(0,laneY(3)-gap-WT/2,0);
   }
   if(preview)preview.g.visible=false;  // the menu's cell must not sit in shot
-  if(introCell){
-    // it wags less and less as the walls close in — the point of the shot
-    const room=(gap-G1)/(G0-G1);
-    introCell.g.position.set(x,PVY+Math.sin(T*2.6)*.1*room,0);
-    spinModel(introCell,4+introSpeed(T)*3.2,dt);
-    glow.position.set(x,PVY+1.2,3.5);
+  if(introCell)for(let i=0;i<introCell.length;i++){
+    const x=introX(i,T);
+    // they wag less and less as the walls close in — the point of the shot
+    introCell[i].g.position.set(x,laneY(i)+Math.sin(T*2.6+i*1.7)*.07*room,0);
+    spinModel(introCell[i],3+introSpeed(i,T)*2.4,dt);
   }
+  glow.position.set(2,PVY,6);
   if(introDust)introDust.position.x=-((T*1.1)%8);
   // a plain side-on view, far enough back that the whole lane fits whatever
   // shape the window is, easing in a little as it goes
-  const halfH=Math.tan(31*Math.PI/180),asp=Math.max(.4,camera.aspect);
-  const need=Math.min(26,Math.max(12,10.6/(halfH*asp)));
-  camera.position.set(.6,PVY,need-sstep(T/9)*need*.1);
+  const tn=Math.tan(31*Math.PI/180),asp=Math.max(.4,camera.aspect);
+  const need=Math.min(34,Math.max(9.6/(tn*asp),5.6/tn));
+  camera.position.set(.6,PVY,need-sstep(T/9)*need*.07);
   look.set(.6,PVY,0);camera.lookAt(look);
+  introLabels(T);
   scene.fog.density=.004;
   scene.background.set(0x050d16);scene.fog.color.set(0x050d16);
   // fade the lane right down before the title, or the letters land on the cell
-  $('intro').style.setProperty('--veil',T>8?Math.min(.5,(T-8)*.55):0);
+  $('intro').style.setProperty('--veil',T>7.5?Math.min(.5,(T-7.5)*.6):0);
   // captions, then the title
   let want=-1;
   for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
@@ -1021,9 +1064,9 @@ function stepIntro(dt){
     else{c.classList.remove('on');c.textContent=t(CAPS[want][2]);
       requestAnimationFrame(()=>c.classList.add('on'));}
   }
-  $('ititle').classList.toggle('on',T>8.6);
+  $('ititle').classList.toggle('on',T>7.9);
   renderer.render(scene,camera);
-  if(T>11)endIntro(false);
+  if(T>10.2)endIntro(false);
 }
 function toTitle(){
   state='title';
@@ -1718,8 +1761,8 @@ if(location.search.indexOf('dbg')>=0)window.__br3d={NET:NET,racers:()=>racers,
   // way to look at a given moment of it
   seek:(T)=>{if(state!=='intro')playIntro();introT=T;introCap=-1;stepIntro(0);
     return {t:introT,cam:camera.position.toArray().map(n=>+n.toFixed(2)),
-      gap:+introGap(T).toFixed(2),v:+introSpeed(T).toFixed(2),
-      cell:introCell?introCell.g.position.toArray().map(n=>+n.toFixed(2)):null,
+      gap:+introGap(T).toFixed(2),
+      cells:introCell?introCell.map((m,i)=>SPECIES[ILANE[i]].ab+' '+m.g.position.x.toFixed(1)):null,
       cap:$('icap').textContent};}};
 requestAnimationFrame(frame);
 })();
