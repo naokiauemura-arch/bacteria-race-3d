@@ -28,6 +28,44 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* ---------- menu ---------- */
 #menu{position:fixed;inset:0 auto 0 0;width:min(680px,100%);background:linear-gradient(90deg,var(--panel) 84%,transparent);padding:24px 60px 24px 30px;overflow-y:auto;touch-action:pan-y;display:flex;flex-direction:column;gap:15px}
 .eyebrow{font-size:11px;letter-spacing:.28em;color:var(--gold)}
+
+/* ---- opening ---- */
+#intro{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;text-align:center;pointer-events:none;padding:20px}
+#icap{font-size:clamp(15px,2.6vw,22px);line-height:1.7;color:var(--ink);max-width:22em;
+  opacity:0;transform:translateY(8px);transition:opacity .7s,transform .7s;
+  text-shadow:0 2px 24px #000,0 0 60px #000}
+#icap.on{opacity:1;transform:none}
+#ititle{font-size:clamp(30px,7vw,60px);opacity:0;transform:scale(.97);
+  transition:opacity 1s,transform 1s;text-shadow:0 4px 40px #000}
+#ititle.on{opacity:1;transform:none}
+#skip{position:fixed;right:22px;bottom:20px;pointer-events:auto;padding:8px 16px;
+  border:1px solid var(--line);border-radius:999px;background:rgba(0,0,0,.35);
+  color:var(--dim);font:inherit;font-size:12px;letter-spacing:.06em}
+#skip:hover{color:var(--ink)}
+
+/* ---- start screen ---- */
+#title{position:fixed;inset:0;display:flex;align-items:center;
+  justify-content:flex-start;padding:24px clamp(20px,6vw,70px);
+  background:linear-gradient(90deg,rgba(5,13,22,.92) 50%,rgba(5,13,22,.25) 100%)}
+.tbox{display:flex;flex-direction:column;gap:16px;width:min(520px,100%)}
+.tlead{color:var(--dim);font-size:13.5px}
+.tbtns{display:flex;flex-direction:column;gap:10px}
+button.mode{display:block;text-align:left;padding:16px 20px;border-radius:14px;
+  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);
+  font:inherit;transition:border-color .2s,background .2s,transform .12s}
+button.mode b{display:block;font-size:17px;font-weight:700;letter-spacing:.02em}
+button.mode small{display:block;margin-top:3px;color:var(--dim);font-size:12.5px}
+button.mode:hover{background:rgba(255,255,255,.09);border-color:var(--gold);transform:translateY(-1px)}
+button.mode.on b{color:var(--gold)}
+.trow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:4px}
+#lang2{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-size:11.5px}
+#lang2 button{padding:4px 12px;color:var(--dim)}
+#lang2 button[aria-pressed=true]{background:var(--gold);color:#17120a;font-weight:700}
+button.ghost{color:var(--dim);font:inherit;font-size:12px;background:none;border:0;
+  padding:2px 0;text-align:left}
+button.ghost:hover{color:var(--ink)}
+#toTitle{align-self:flex-start}
 h1{font-family:var(--serif);font-weight:700;font-size:clamp(26px,5vw,38px);line-height:1.15;letter-spacing:.02em}
 .lead{color:var(--dim);font-size:13px;line-height:1.7;max-width:38em}
 h2{font-size:11px;letter-spacing:.2em;color:var(--dim);font-weight:500;margin-bottom:7px;display:flex;gap:10px;align-items:center}
@@ -154,8 +192,31 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
 <body>
 <canvas id="gl"></canvas>
 
-<div id="menu">
+<div id="intro" class="hidden">
+  <p id="icap"></p>
+  <h1 id="ititle"></h1>
+  <button id="skip"></button>
+</div>
+
+<div id="title" class="hidden">
+  <div class="tbox">
+    <div class="eyebrow">8 SPECIES · 5 COURSES · ITEM BATTLE</div>
+    <h1 id="tt_title"></h1>
+    <p class="tlead" id="tt_lead"></p>
+    <div class="tbtns">
+      <button id="mCpu" class="mode"><b></b><small></small></button>
+      <button id="mOn" class="mode on"><b></b><small></small></button>
+    </div>
+    <div class="trow">
+      <div id="lang2"><button data-l="ja">日本語</button><button data-l="en">English</button></div>
+      <button id="replayIntro" class="ghost"></button>
+    </div>
+  </div>
+</div>
+
+<div id="menu" class="hidden">
   <div>
+    <button id="toTitle" class="ghost"></button>
     <div class="eyebrow">8 SPECIES · 5 COURSES · ITEM BATTLE</div>
     <div id="lang"><button data-l="ja">日本語</button><button data-l="en">English</button></div>
     <h1 id="t_title"></h1>
@@ -169,7 +230,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <div><h2 id="t_hco"></h2><div id="courses" class="row"></div></div>
   <div><h2 id="t_hmo"></h2><div id="modes" class="row"></div></div>
   <div><h2 id="t_hdf"></h2><div id="diffs" class="row"></div></div>
-  <div><h2 id="t_hon"></h2>
+  <div id="onlineBlock"><h2 id="t_hon"></h2>
     <div id="online">
       <div style="display:flex;gap:8px">
         <input id="roomCode" maxlength="6" autocapitalize="characters"
@@ -360,6 +421,13 @@ ja:{
  lbNone:'まだ記録がありません',lbMine:'あなた',lbCond:(m,d)=>m+'・CPU '+d,
  lbKept:'この端末に上位100件まで保存されます',
  nameH:'プレイヤー名',namePh:'名前（12文字まで）',nameNote:'記録に残ります。空欄なら「名無し」',anon:'名無し',
+ i1:'広い液の中なら、いちばん速い細菌が決まっている。',
+ i2:'ところが、細胞1個分しかない隙間に入ると——',
+ i3:'順位は、入れ替わる。',
+ iSkip:'スキップ',tLead:'遊びかたを選んでください',
+ mCpu:'CPUと対戦',mCpuSub:'ひとりで走る。7体のCPUと8種混走',
+ mOn:'オンライン対戦',mOnSub:'合言葉を決めて、友だちと同じレースへ',
+ replay:'オープニングをもう一度',backTitle:'← 最初の画面へ',
  lbLocal:'この端末',lbWorld:'全体',lbSending:'全体の順位を問い合わせ中…',
  lbOff:'全体の記録につながりませんでした（この端末の記録は残っています）',
  lbWorldKept:'全体では上位100件まで保存されます',up:'ルート選びとバトルで順位を押し上げました。',down:'妨害か場外にやられました。',
@@ -398,6 +466,13 @@ en:{
  lbNone:'No times yet',lbMine:'you',lbCond:(m,d)=>m+' · CPU '+d,
  lbKept:'The best 100 are kept on this device',
  nameH:'Player name',namePh:'name (up to 12)',nameNote:'Shown with your times. Blank means "anon"',anon:'anon',
+ i1:'In open liquid, one bacterium is the fastest.',
+ i2:'Squeeze them into a gap the width of a single cell —',
+ i3:'— and the ranking comes out in a different order.',
+ iSkip:'Skip',tLead:'Choose how you want to play',
+ mCpu:'Race the CPU',mCpuSub:'On your own, against seven CPU cells',
+ mOn:'Race online',mOnSub:'Agree on a room code and race your friends',
+ replay:'Play the opening again',backTitle:'← Back to the start',
  lbLocal:'this device',lbWorld:'everyone',lbSending:'Asking for your place among all runs…',
  lbOff:'Could not reach the shared table (your own record is safe)',
  lbWorldKept:'The best 100 of everyone are kept',up:' Route choice and battling moved you up.',down:' Attacks or falls cost you places.',
@@ -790,7 +865,8 @@ function renderMenu(){
   $('t_hnm').textContent=t('nameH');$('t_nmnote').textContent=t('nameNote');
   $('pname').placeholder=t('namePh');$('pname').value=pname;
   for(const[id,k]of[['t_title','title'],['t_lead','lead'],['t_hsp','hSp'],['t_hco','hCo'],['t_hmo','hMo'],['t_hdf','hDf'],['go','go'],['t_keys','keys'],['t_src','src'],
-    ['t_of','of8'],['t_slow','slow'],['t_il','itemLab'],['tw','tw'],['tu','tu'],['quit','quit'],['again','again'],['back','back']])$(id).innerHTML=t(k);
+    ['t_of','of8'],['t_slow','slow'],['t_il','itemLab'],['tw','tw'],['tu','tu'],['quit','quit'],['again','again'],['back','back'],
+    ['toTitle','backTitle']])$(id).innerHTML=t(k);
   document.querySelectorAll('#lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
   $('species').innerHTML=SPECIES.map((s,i)=>`<button class="sp" data-i="${i}" style="--c:${hex(s.color)}"><div class="n"><span>${s.name}</span><em>${t('gram',s.gram)}</em></div><div class="j">${spLocal(s)}${s.wrap?' · <b style="color:var(--ink);font-weight:500">'+t('wrapOK')+'</b>':''}${s.noGlu?' · <b style="color:var(--dim);font-weight:500">'+t('noGlu')+'</b>':''}${s.chitin?' · <b style="color:var(--ink);font-weight:500">'+t('chiOK')+'</b>':''}${s.chiStick?' · <b style="color:var(--dim);font-weight:500">'+t('chiBad')+'</b>':''}</div>${
     s.v.map((v,e)=>`<div class="bar"><span style="font-family:inherit;font-size:9px;color:${ENVC[e]}">${t('barL')[e]}</span><div><i style="width:${v/VMAX*100}%"></i></div><b class="num">${v.toFixed(1)}</b></div>`).join('')
@@ -827,7 +903,10 @@ const keys={left:false,right:false,use:false};let usePressed=false,wrapPressed=f
 const KM={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'use',ArrowUp:'use',KeyW:'use',KeyX:'use'};
 window.addEventListener('keydown',e=>{if(!e.repeat&&(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyS'||e.code==='ArrowDown')){wrapPressed=true;if(state!=='menu')e.preventDefault();}
   const k=KM[e.code];if(k){if(k==='use'&&!keys.use)usePressed=true;keys[k]=true;if(state!=='menu')e.preventDefault();}
+  if(state==='intro'){endIntro(true);return;}
   if(e.code==='Enter'&&state==='menu')startRace();});
+window.addEventListener('pointerdown',e=>{
+  if(state==='intro'&&!e.target.closest('#skip'))endIntro(true);});
 window.addEventListener('keyup',e=>{const k=KM[e.code];if(k)keys[k]=false;});
 document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;
   const on=e=>{e.preventDefault();if(k==='use')usePressed=true;if(k==='wrap'){wrapPressed=true;return;}keys[k]=true;},off=()=>{keys[k]=false;};
@@ -837,6 +916,107 @@ document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;
 let state='menu',gluMsg=false,chiMsg=false,clock=0,count=0,shake=0,firstFin=null,endAt=null,lastEnv=-1,msgT=0,curFog=.012,camX=0,lookX=0;
 let phages=[],waves=[];
 const me=()=>racers[meIdx];
+
+/* ================= opening and start screen =================
+   The opening says in pictures what the paper says in words: a cell swimming
+   along while the walls close in to one cell's width. It is skippable, and it
+   only plays once per visit. */
+let introT=0,introG=null,introWall=null,introCap=-1,introOn=false;
+const CAPS=[[.4,3.1,'i1'],[3.3,6.0,'i2'],[6.2,8.4,'i3']];
+
+function buildIntro(){
+  introG=new THREE.Group();
+  const N=460,pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*30;
+    pos[i*3+1]=(Math.random()-.5)*16;pos[i*3+2]=-Math.random()*95;}
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  introG.add(new THREE.Points(geo,new THREE.PointsMaterial(
+    {color:0x9fd8ff,size:.1,transparent:true,opacity:.45,depthWrite:false})));
+  const wm=new THREE.MeshStandardMaterial({color:0x1b3a4a,roughness:.95,metalness:0});
+  introWall=[new THREE.Mesh(new THREE.BoxGeometry(.6,7,130),wm),
+             new THREE.Mesh(new THREE.BoxGeometry(.6,7,130),wm)];
+  introWall[0].position.set(-11,0,-52);introWall[1].position.set(11,0,-52);
+  introG.add(introWall[0],introWall[1]);
+  scene.add(introG);
+}
+function playIntro(){
+  if(!introG)buildIntro();else introG.visible=true;
+  introT=0;introCap=-1;introOn=true;state='intro';
+  $('intro').classList.remove('hidden');$('title').classList.add('hidden');
+  $('menu').classList.add('hidden');$('blurb').classList.add('hidden');
+  $('icap').classList.remove('on');$('ititle').classList.remove('on');
+  $('ititle').textContent=t('title');$('skip').textContent=t('iSkip');
+}
+function endIntro(skipped){
+  if(!introOn)return;
+  introOn=false;
+  if(introG)introG.visible=false;
+  if(preview){preview.g.rotation.set(0,0,0);preview.g.position.set(0,PVY,0);}
+  scene.fog.density=.004;
+  $('intro').classList.add('hidden');
+  try{sessionStorage.setItem('br3d-seen','1');}catch(e){}
+  if(skipped)gc('intro/skip','Opening skipped');
+  toTitle();
+}
+function stepIntro(dt){
+  introT+=dt;const T=introT;
+  // the cell drifts across the view while the camera closes in
+  if(preview){preview.g.position.set(-.4,Math.sin(T*2.1)*.22,-4.5+Math.min(2.6,T*.34));
+    preview.g.rotation.y=Math.PI*.5;spinModel(preview,15,dt);}
+  // the walls squeeze in from 11 µm to just over one cell wide
+  const k=Math.min(1,Math.max(0,(T-2.6)/3.6)),s=k*k*(3-2*k),w=11-(11-1.25)*s;
+  if(introWall){introWall[0].position.x=-w;introWall[1].position.x=w;}
+  camera.position.set(0,.55+Math.sin(T*.8)*.1,8.4-Math.min(5.6,T*.95));
+  look.set(0,0,-9);camera.lookAt(look);
+  scene.fog.density=.012+s*.016;
+  scene.background.set(0x050d16);scene.fog.color.set(0x050d16);
+  // captions, then the title
+  let want=-1;
+  for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
+  if(want!==introCap){
+    introCap=want;const c=$('icap');
+    if(want<0)c.classList.remove('on');
+    else{c.classList.remove('on');c.textContent=t(CAPS[want][2]);
+      requestAnimationFrame(()=>c.classList.add('on'));}
+  }
+  if(T>8.5)$('ititle').classList.add('on');
+  renderer.render(scene,camera);
+  if(T>10.4)endIntro(false);
+}
+function toTitle(){
+  state='title';
+  $('title').classList.remove('hidden');$('menu').classList.add('hidden');
+  $('intro').classList.add('hidden');$('blurb').classList.add('hidden');
+  $('hud').classList.add('hidden');$('result').classList.add('hidden');
+  if(NET.on)netLeave();
+  renderTitle();
+}
+function renderTitle(){
+  $('tt_title').textContent=t('title');
+  $('tt_lead').textContent=t('tLead');
+  $('mCpu').innerHTML='<b>'+t('mCpu')+'</b><small>'+t('mCpuSub')+'</small>';
+  $('mOn').innerHTML='<b>'+t('mOn')+'</b><small>'+t('mOnSub')+'</small>';
+  $('replayIntro').textContent=t('replay');
+  document.querySelectorAll('#lang2 button').forEach(
+    b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
+}
+let netMode='cpu';
+function pickMode(m){
+  netMode=m;gc('mode/'+m,m==='on'?'Chose online':'Chose CPU');
+  $('onlineBlock').classList.toggle('hidden',m!=='on');
+  $('title').classList.add('hidden');
+  toMenu();
+  if(m==='on')setTimeout(()=>{const f=$('roomCode');if(f)f.focus();},60);
+}
+$('skip').addEventListener('click',()=>endIntro(true));
+$('mCpu').addEventListener('click',()=>pickMode('cpu'));
+$('mOn').addEventListener('click',()=>pickMode('on'));
+$('toTitle').addEventListener('click',toTitle);
+$('replayIntro').addEventListener('click',()=>playIntro());
+$('lang2').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  lang=b.dataset.l;gc('lang/'+lang);try{localStorage.setItem('br3d-lang',lang);}catch(_){}
+  renderMenu();refreshMenu();renderTitle();});
 
 function toMenu(){
   if(state==='run'||state==='count')gc('race-quit');
@@ -1407,7 +1587,8 @@ const look=new THREE.Vector3();let last=performance.now(),tAll=0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(.05,(now-last)/1000);last=now;tAll+=dt;
-  if(state==='menu'){
+  if(state==='intro'){stepIntro(dt);return;}
+  if(state==='menu'||state==='title'){
     if(preview){spinModel(preview,14,dt);preview.g.rotation.y+=dt*.25;preview.g.position.y=PVY+Math.sin(tAll*.8)*.15;}
     const narrow=window.innerWidth<1000,ox=narrow?0:-3.4;
     camera.position.set(ox,PVY+1.6,7.5);look.set(ox,PVY,0);camera.lookAt(look);
@@ -1483,8 +1664,12 @@ function frame(now){
   renderer.render(scene,camera);
 }
 renderMenu();refreshMenu();
+// the opening plays once a visit; coming back from a race goes straight to the
+// start screen. ?nointro= skips it outright, which the tests use.
+let seen=false;try{seen=sessionStorage.getItem('br3d-seen')==='1';}catch(e){}
+if(seen||location.search.indexOf('nointro')>=0)toTitle();else playIntro();
 if(location.search.indexOf('dbg')>=0)window.__br3d={NET:NET,racers:()=>racers,
-  state:()=>state,me:()=>meIdx};
+  state:()=>state,me:()=>meIdx,title:toTitle,intro:playIntro,pick:pickMode};
 requestAnimationFrame(frame);
 })();
 </script>
