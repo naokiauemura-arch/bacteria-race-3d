@@ -1055,6 +1055,9 @@ function stepIntro(dt){
     if(m.wrap){
       const k=i===2?1:(i===1?introClose(T):0),xy=1+1.1*k;
       for(const w of m.wrap)w.scale.set(xy,xy,1-1.62*k);
+      // V. fischeri's tuft sits at one pole and it travels wrapped-pole first,
+      // so the cell turns about as it wraps rather than dragging the bundle.
+      if(i===1)m.g.rotation.y=-Math.PI/2+Math.PI*k;
     }
     // they wag less and less as the walls close in — the point of the shot
     introCell[i].g.position.set(x,laneY(i)+Math.sin(T*2.6+i*1.7)*.07*room,0);
