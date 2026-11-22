@@ -1040,6 +1040,14 @@ function stepIntro(dt){
   if(preview)preview.g.visible=false;  // the menu's cell must not sit in shot
   if(introCell)for(let i=0;i<introCell.length;i++){
     const x=introX(i,T);
+    // wrapping: C. jejuni's leading flagellum is wrapped even in open water,
+    // V. fischeri wraps as the walls close, which is how both cross a gap
+    // no wider than themselves
+    const m=introCell[i];
+    if(m.wrap){
+      const k=i===2?1:(i===1?introClose(T):0),xy=1+1.1*k;
+      for(const w of m.wrap)w.scale.set(xy,xy,1-1.62*k);
+    }
     // they wag less and less as the walls close in — the point of the shot
     introCell[i].g.position.set(x,laneY(i)+Math.sin(T*2.6+i*1.7)*.07*room,0);
     spinModel(introCell[i],3+introSpeed(i,T)*2.4,dt);
