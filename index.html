@@ -1060,12 +1060,13 @@ function stepIntro(dt){
   // captions, then the title
   let want=-1;
   for(let i=0;i<CAPS.length;i++)if(T>=CAPS[i][0]&&T<CAPS[i][1])want=i;
-  if(want!==introCap){
-    introCap=want;const c=$('icap');
-    if(want<0)c.classList.remove('on');
-    else{c.classList.remove('on');c.textContent=t(CAPS[want][2]);
-      requestAnimationFrame(()=>c.classList.add('on'));}
+  const c=$('icap');
+  if(want<0)c.classList.remove('on');          // idempotent: never left showing
+  else if(want!==introCap){
+    c.classList.remove('on');c.textContent=t(CAPS[want][2]);
+    requestAnimationFrame(()=>c.classList.add('on'));
   }
+  introCap=want;
   $('ititle').classList.toggle('on',T>7.9);
   renderer.render(scene,camera);
   if(T>10.2)endIntro(false);
