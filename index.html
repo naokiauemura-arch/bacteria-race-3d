@@ -214,6 +214,7 @@ kbd{font:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;co
   <table id="rt"></table>
   <div id="lb"></div>
   <div id="lbg"></div>
+  <div id="onres"></div>
   <div class="btns"><button class="p" id="again"></button><button id="back"></button></div>
 </div></div>
 
@@ -910,7 +911,9 @@ function netOn(m){
   }
   else if(m.t==='cs'){
     if(NET.host||!Array.isArray(m.a))return;
-    for(const [i,d,x,f] of m.a){const q=NET.cpu[i];if(q){q.td=d;q.tx=x;q.f=f;}}
+    // [index, distance, lateral, flags, finish time or 0]
+    for(const [i,d,x,f,fin] of m.a){const q=NET.cpu[i];if(q){q.td=d;q.tx=x;q.f=f;
+      if(fin&&racers[i]&&racers[i].finish==null)racers[i].finish=fin;}}
   }
   else if(m.t==='hit'){
     const to=NET.byId[m.to];
@@ -921,13 +924,27 @@ function netOn(m){
       strike(me(),si>=0?racers[si]:me(),m.k==='phg'||m.k==='bde'?m.k:'abx',+m.k>=0?+m.k:0);
     }
   }
-  else if(m.t==='fin'){const p=NET.byId[m.id];if(p)p.fin=m.time;}
-  else if(m.t==='res'){NET.res=m.players;showOnlineResult();}
+  else if(m.t==='fin'){const p=NET.byId[m.id];if(p){p.fin=m.time;applyFin(p.sp,m.time);}}
+  else if(m.t==='res'){
+    NET.res=m.players;
+    // the server's list is the one everybody shares: fold it into our own racers
+    for(const q of m.players||[])if(q.fin!=null)applyFin(q.sp,q.fin);
+    showOnlineResult();
+    if(state==='done')renderResult();      // a late arrival still fixes the placing
+  }
   else if(m.t==='left'){
     const p=NET.byId[m.id];
     if(p&&p.sp){const i=SPECIES.findIndex(s=>s.ab===p.sp);delete NET.rem[i];}
     delete NET.byId[m.id];
   }
+}
+/* Somebody else crossed the line. Their cell is driven over the wire, so our own
+   physics never marks it finished — record the time they reported, or every player
+   would rank the race from their own screen and get a different answer. */
+function applyFin(ab,time){
+  if(!ab||time==null)return;
+  const i=SPECIES.findIndex(s=>s.ab===ab);
+  if(i>=0&&racers[i]&&racers[i].finish==null)racers[i].finish=time;
 }
 const isRemote=r=>NET.on&&NET.rem[r.i]!=null;
 const isNetCpu=r=>NET.on&&!NET.host&&NET.cpu[r.i]!=null;
@@ -947,7 +964,8 @@ function netTick(dt){
     for(const r of racers){
       if(r.i===meIdx||NET.rem[r.i])continue;
       a.push([r.i,+r.dist.toFixed(2),+rx(r).toFixed(2),
-        (r.boostT>0?1:0)|(r.slowT>0?2:0)|(r.spinT>0?4:0)|(r.shieldT>0?8:0)]);
+        (r.boostT>0?1:0)|(r.slowT>0?2:0)|(r.spinT>0?4:0)|(r.shieldT>0?8:0),
+        r.finish!=null?+r.finish.toFixed(2):0]);
     }
     if(a.length)netSend({t:'cs',a:a});
   }
@@ -1001,7 +1019,8 @@ function showOnlineResult(){
     `<tr class="${p.id===NET.id?'me':''}"><td>${i+1}</td>
       <td><span class="nm">${esc(p.name||t('anon'))}</span> <small style="opacity:.6">${p.sp||''}</small></td>
       <td class="num">${p.fin!=null?p.fin.toFixed(2)+' s':'—'}</td></tr>`).join('');
-  const box=$('lbg');if(box)box.innerHTML=`<div class="eyebrow" style="margin-top:14px">${t('onRes')}</div>
+  // its own box: the global-ranking lookup owns #lbg and would overwrite this
+  const box=$('onres');if(box)box.innerHTML=`<div class="eyebrow" style="margin-top:14px">${t('onRes')}</div>
     <table>${rows}</table>`;
 }
 
@@ -1350,15 +1369,28 @@ function stepRace(dt){
   phages=phages.filter(f=>!f.dead);
   const key=renv(p)+(p.br?10:0);if(key!==lastEnv){setEnvBanner(renv(p),true);lastEnv=key;}
   if(endAt!=null)endAt-=dt;
-  if(p.finish!=null&&(endAt==null||endAt>1.4))endAt=1.4;
+  // online, hold on a moment longer so the others' finish times get here first
+  const wait=NET.on?3.5:1.4;
+  if(p.finish!=null&&(endAt==null||endAt>wait))endAt=wait;
   if(endAt!=null&&endAt<=0)finish();
 }
 
 function finish(){
   state='done';
-  const o=order(),p=me(),rank=o.indexOf(p)+1;
+  const p=me(),rank=order().indexOf(p)+1;
   gc('race-end/'+p.sp.ab+'/'+(p.finish!=null?'rank'+rank:'timeout'),
      'Finished '+rank+' as '+p.sp.name);
+  renderResult();
+  $('lb').innerHTML=p.finish!=null?lbTable(lbAdd(p.finish,p.sp.ab)):'';
+  $('lbg').innerHTML='';$('onres').innerHTML='';
+  if(p.finish!=null)lbSend(p.finish,p.sp.ab);
+  if(NET.res)showOnlineResult();
+  $('result').classList.remove('hidden');
+}
+/* Drawn on its own, so that a finish time arriving after the screen is up can
+   redraw the placing instead of leaving a stale one. */
+function renderResult(){
+  const o=order(),p=me(),rank=o.indexOf(p)+1;
   const theo=SPECIES.map(s=>{let t=0;for(let d=0;d<LEN;d+=2)t+=2/speedOf(s,envAt(d,0));return{s,t};}).sort((a,b)=>a.t-b.t);
   $('rc').textContent=t('rc',coT(course,'name'),LEN,moT(modeIdx,'name'),t('df')[diffIdx][0]);
   $('rh').textContent=rank===1?t('win'):t('place',rank);
@@ -1368,10 +1400,6 @@ function finish(){
     +(rank<myTheo?t('up'):rank>myTheo?t('down'):'');
   $('rt').innerHTML=o.map((r,i)=>`<tr class="${r===p?'me':''}"><td>${i+1}</td><td><span class="nm" style="color:${hex(r.sp.color)}">${r.sp.name}</span>${r===p?'<span class="you">YOU</span>':''}</td><td class="h num">${t('stats',r.hits,r.taken,r.falls)}</td><td class="num">${
     r.finish!=null?r.finish.toFixed(2)+' s':clamp(r.dist,0,LEN).toFixed(1)+' µm'}</td></tr>`).join('');
-  $('lb').innerHTML=p.finish!=null?lbTable(lbAdd(p.finish,p.sp.ab)):'';
-  $('lbg').innerHTML='';
-  if(p.finish!=null)lbSend(p.finish,p.sp.ab);
-  $('result').classList.remove('hidden');
 }
 
 /* ================= frame ================= */
