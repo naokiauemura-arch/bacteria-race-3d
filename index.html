@@ -974,7 +974,7 @@ function buildIntro(){
     introG.add(m);introWall.push(m);
   }
   // the finish line all four are heading for
-  const fin=new THREE.Mesh(new THREE.BoxGeometry(.12,4*LS,7.2),
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(.14,4*LS,.3),
     new THREE.MeshBasicMaterial({color:0xe3b24a,transparent:true,opacity:.75}));
   fin.position.set(IFIN,PVY,0);introG.add(fin);
   // its own cells, so the menu preview keeps its own pose
